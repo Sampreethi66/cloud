@@ -123,7 +123,7 @@ Metadata: Read-only (gets set automatically)
 
 ## Part 3: Store GitHub Token in Secret Manager
 
-Commands for [Storing a GitHub Token in Secret Manager](../../localsite/start/steps/github-token)
+Commands for [Storing a GitHub Token in Secret Manager](../../localsite/start/steps/github-token) to share
 
 We named the token: github-token-run-models-1
 
@@ -140,8 +140,6 @@ gcloud secrets add-iam-policy-binding github-token \
     --member="serviceAccount:your-project-id@appspot.gserviceaccount.com" \
     --role="roles/secretmanager.secretAccessor"
 ```
-
-Better yet, [create a Google secretmanager entry](/localsite/start/steps/github-token/) to share with others whoe use the code.
 
 
 ## Part 4: Create Flask Application
