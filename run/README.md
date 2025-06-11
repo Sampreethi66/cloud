@@ -144,6 +144,7 @@ gcloud secrets add-iam-policy-binding github-token \
 
 ## Part 4: Create Flask Application
 
+[Review this flask info from Prem](https://github.com/ModelEarth/cloud/tree/main/cloud-main/flask), and anything useful as you 
 Create a directory for your project and set up the following files:
 
 ### `Dockerfile`
