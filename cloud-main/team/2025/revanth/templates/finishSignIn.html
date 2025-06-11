@@ -1,0 +1,81 @@
+!DOCTYPE html>
+<html>
+<head>
+  <title>Completing Sign-In</title>
+  <meta charset="UTF-8">
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .box {
+      text-align: center;
+      padding: 30px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 350px;
+    }
+    h2 {
+      color: #333;
+    }
+    #msg {
+      margin-top: 1rem;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Completing Sign-In...</h2>
+    <p id="msg">Please wait...</p>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    const msg = document.getElementById("msg");
+
+    if (auth.isSignInWithEmailLink(window.location.href)) {
+      let email = window.localStorage.getItem('emailForSignIn');
+      if (!email) {
+        email = window.prompt('Please enter your email to confirm sign-in:');
+      }
+
+      auth.signInWithEmailLink(email, window.location.href)
+        .then(() => {
+          window.localStorage.removeItem('emailForSignIn');
+          window.location.href = "/success.html";
+        })
+        .catch((error) => {
+          console.error("Error during sign-in:", error.message);
+          msg.innerText = "Failed to complete sign-in.";
+          setTimeout(() => {
+            window.location.href = "/failure.html";
+          }, 2000);
+        });
+    } else {
+      msg.innerText = "Invalid or expired link.";
+      setTimeout(() => {
+        window.location.href = "/failure.html";
+      }, 2000);
+    }
+  </script>
+</body>
+</html>

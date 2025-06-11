@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Run Models</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            margin-top: 50px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Run Models</h1>
+        <p>Click the button below to run the notebook and push results to GitHub</p>
+        <button id="runButton">Run Notebook</button>
+        <div id="status" style="display: none;"></div>
+
+        <br><br>
+        <div>Not yet activated.</div>
+    </div>
+
+    <script>
+        document.getElementById('runButton').addEventListener('click', function() {
+            const button = this;
+            const status = document.getElementById('status');
+            
+            button.disabled = true;
+            button.textContent = 'Processing...';
+            status.style.display = 'none';
+            
+            fetch('/run-notebook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                button.disabled = false;
+                button.textContent = 'Run Notebook';
+                status.style.display = 'block';
+                
+                if (data.status === 'success') {
+                    status.className = 'success';
+                    status.textContent = 'Notebook executed successfully!';
+                } else {
+                    status.className = 'error';
+                    status.textContent = 'Error: ' + data.message;
+                }
+            })
+            .catch(error => {
+                button.disabled = false;
+                button.textContent = 'Run Notebook';
+                status.style.display = 'block';
+                status.className = 'error';
+                status.textContent = 'Error: ' + error.message;
+            });
+        });
+    </script>
+</body>
+</html>

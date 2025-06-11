@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sign Up - Firebase Auth</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .signup-container {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      width: 300px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 0.5rem 0;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    input {
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #34a853;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .github-btn {
+      background-color: #333;
+      color: white;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    a {
+      display: block;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      text-decoration: none;
+      color: #4285f4;
+    }
+  </style>
+</head>
+<body>
+  <div class="signup-container">
+    <h2>Create a New Account</h2>
+    <form id="signup-form">
+      <input type="email" id="signup-email" placeholder="Email" required><br>
+      <input type="password" id="signup-password" placeholder="Password" required><br>
+      <button type="submit">Sign Up</button>
+    </form>
+
+    <h3>Or</h3>
+    <button class="github-btn" onclick="loginWithGitHub()">Sign up with GitHub</button>
+    
+    <a href="/login.html">Already have an account? Login</a>
+  </div>
+
+  <script>
+  const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    document.getElementById('signup-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('signup-email').value;
+      const password = document.getElementById('signup-password').value;
+
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => {
+          window.location.href = "/login.html";
+        })
+        .catch((error) => {
+          console.error("Signup failed:", error.message);
+          window.location.href = "/failure.html";
+        });
+    });
+
+    function loginWithGitHub() {
+      const provider = new firebase.auth.GithubAuthProvider();
+      auth.signInWithPopup(provider)
+        .then(() => {
+          window.location.href = "/login.html";
+        })
+        .catch((error) => {
+          console.error("GitHub signup/login failed:", error.message);
+          window.location.href = "/failure.html";
+        });
+    }
+  </script>
+</body>
+</html>

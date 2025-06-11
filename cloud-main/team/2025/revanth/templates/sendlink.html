@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Send Sign-In Link</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+</head>
+<body>
+  <h2>Enter your email for a login link:</h2>
+  <input type="email" id="email" placeholder="Email" />
+  <button onclick="sendLink()">Send Link</button>
+  <p id="msg"></p>
+
+  <script>
+    const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+    firebase.initializeApp(firebaseConfig);
+
+    function sendLink() {
+      const email = document.getElementById("email").value;
+      const actionCodeSettings = {
+        url: 'https://flask-model-earth.web.app/finishsignin.html',
+        handleCodeInApp: true
+      };
+
+      firebase.auth().sendSignInLinkToEmail(email, actionCodeSettings)
+        .then(() => {
+          window.localStorage.setItem('emailForSignIn', email);
+          document.getElementById("msg").innerText = "Sign-in link sent! Check your email.";
+        })
+        .catch((error) => {
+          console.error("Error sending email link:", error.message);
+          document.getElementById("msg").innerText = "Error: " + error.message;
+        });
+    }
+  </script>
+</body>
+</html>
