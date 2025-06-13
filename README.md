@@ -5,24 +5,26 @@
 
 [Cloud Run](run) - We're working toward running a copy of our [RealityStream Colab](/realitystream)
 
+Should we move anything from [cloud-main](cloud-main) into the cloud/run folder?
+
 ## Flask via Google Cloud - User Folders
 
-For new development testing...
+ folder where you'll add deployment steps to launch a Flask site using Google Cloud. 
 
-Create a [cloud/team/2025/[handle]](https://github.com/modelearth/cloud/) folder where you'll add deployment steps to launch a Flask site using Google Cloud. 
-
-For your [handle] use lowercase firstname and optionally your last initial, or your nickname.
+For your [handle] use  or your nickname.
 
 Our [webhook repo](https://github.com/modelearth/webhook/) has a sample with Google Cloud Flask deployment steps you can copy and improve.
 
 
 ## Integration with localsite navigation
 
+For new development testing, create a [cloud/team/2025/[handle]](https://github.com/modelearth/cloud/)
+
 1. Fork and clone our [cloud repo](https://github.com/modelearth/cloud) and [localsite repo](https://github.com/modelearth/localsite). 
 
 2. Turn on GitHub Pages for both. So [account].github.io/cloud works.
 
-3. In the "team/2025" subfolder, add a folder with your handle (firstname) from our [Member List](https://model.earth/community/members).
+3. In the "team/2025" subfolder, add a folder with your handle matching your name in our [Member List](https://model.earth/community/members).  
 Use lowercase and optionally include your last initial.
 
 4. Copy the [index.html page](https://github.com/ModelEarth/cloud/blob/main/index.html) to your new folder. Change the title to a description of the folder's content and/or add your handle in parentheses.
