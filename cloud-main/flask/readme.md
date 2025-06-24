@@ -11,7 +11,8 @@ Source: https://github.com/ModelEarth/realitystream/tree/main/models
 ## 1. Google Cloud VM Setup
 • Log in to Google Cloud Console.
 • Navigate to: Compute Engine → VM Instances → Create Instance.
-Instance Settings:
+
+**Instance Settings:**
 Setting Value
 Name flask-server
 Machine type e2-micro (Free Tier eligible)
@@ -30,18 +31,25 @@ sudo apt install python3 python3-pip python3-venv git -y
 
 ## 4. Set Up Flask Application
 
-### Create a project directory
-mkdir flask_app
-cd flask_app
-### Create and activate a Python virtual environment
-python3 -m venv venv
-source venv/bin/activate
-### Install Flask and Gunicorn
-pip install flask gunicorn
-### Create a basic Flask app
-nano app.py
+	# Create a project directory
+
+	mkdir flask_app
+	cd flask_app
+
+	# Create and activate a Python virtual environment
+
+	python3 -m venv venv
+	source venv/bin/activate
+
+	# Install Flask and Gunicorn
+
+	pip install flask gunicorn
+
+	# Create a basic Flask app
+	nano app.py
 
 Paste inside app.py:
+
 from flask import Flask
 app = Flask(__name__)
 @app.route('/')
