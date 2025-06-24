@@ -42,7 +42,7 @@ app = Flask(__name__)
 def home():
 return "Flask app is running on Google Cloud!"
 if __name__ == "__main__":
-app.run(host="0.0.0.0", port=8080)
+app.run(host="0.0.0.0", port=8082)
 
 Save and close (Ctrl + O, Enter, Ctrl + X).
 
@@ -50,20 +50,20 @@ Save and close (Ctrl + O, Enter, Ctrl + X).
 source venv/bin/activate
 python app.py
 
-Flask server will start on port 8080.
+Flask server will start on port 8082.
 
-6. Open Port 8080 (Firewall Rule)
+6. Open Port 8082 (Firewall Rule)
 Go to VPC Network → Firewall Rules → Create Firewall Rule.
 Set:
 Field Value
-Name allow-8080
+Name allow-8082
 Direction Ingress
 Action Allow
 Source 0.0.0.0/0
-Protocols and ports tcp:8080
+Protocols and ports tcp:8082
 Save the rule.
 Now your Flask app is accessible at:
-http://<your-external-ip>:8080
+http://<your-external-ip>:8082
 
 7. Install Jupyter Notebook
 Still inside the VM terminal:
