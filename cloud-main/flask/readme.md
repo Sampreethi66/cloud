@@ -1,6 +1,6 @@
-# Run RealtiyStream colab backup locally using Flask
+# Run RealtiyStream colab backup using Flask
 
-### Flask Hosting and Jupyter Notebook Setup
+### Google Cloud Flask Hosting and Jupyter Notebook Setup
 
 Prepared by: Prem Chand Reddy Gopidinne
 
