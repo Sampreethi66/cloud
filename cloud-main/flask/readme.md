@@ -1,8 +1,14 @@
-Flask Hosting and Jupyter Notebook Setup on Google
-Cloud
+# Run RealtiyStream colab backup locally using Flask
+
+### Flask Hosting and Jupyter Notebook Setup
+
 Prepared by: Prem Chand Reddy Gopidinne
 
-1. Google Cloud VM Setup
+TO DO: Just pull the [raw](https://raw.githubusercontent.com/ModelEarth/realitystream/refs/heads/main/models/Run-Models-bkup.ipynb) Run-Models-bkup.ipynb file  
+Source: https://github.com/ModelEarth/realitystream/tree/main/models
+
+
+## 1. Google Cloud VM Setup
 • Log in to Google Cloud Console.
 • Navigate to: Compute Engine → VM Instances → Create Instance.
 Instance Settings:
@@ -13,26 +19,26 @@ Boot disk Ubuntu 22.04 LTS
 Firewall Check Allow HTTP and Allow HTTPS
 Click Create to launch the instance.
 
-2. SSH into VM Instance
+## 2. SSH into VM Instance
 In the Google Cloud Console → VM Instances → Click SSH on your instance.
 This opens the Linux terminal of your VM.
 
-3. Install Essential Software
+## 3. Install Essential Software
 In the SSH terminal:
 sudo apt update
 sudo apt install python3 python3-pip python3-venv git -y
 
-4. Set Up Flask Application
+## 4. Set Up Flask Application
 
-# Create a project directory
+### Create a project directory
 mkdir flask_app
 cd flask_app
-# Create and activate a Python virtual environment
+### Create and activate a Python virtual environment
 python3 -m venv venv
 source venv/bin/activate
-# Install Flask and Gunicorn
+### Install Flask and Gunicorn
 pip install flask gunicorn
-# Create a basic Flask app
+### Create a basic Flask app
 nano app.py
 
 Paste inside app.py:
@@ -46,13 +52,14 @@ app.run(host="0.0.0.0", port=8082)
 
 Save and close (Ctrl + O, Enter, Ctrl + X).
 
-5. Run Flask App
+## 5. Run Flask App
 source venv/bin/activate
 python app.py
 
 Flask server will start on port 8082.
 
-6. Open Port 8082 (Firewall Rule)
+## 6. Open Port 8082 (Firewall Rule)
+
 Go to VPC Network → Firewall Rules → Create Firewall Rule.
 Set:
 Field Value
@@ -63,20 +70,21 @@ Source 0.0.0.0/0
 Protocols and ports tcp:8082
 Save the rule.
 Now your Flask app is accessible at:
-http://<your-external-ip>:8082
+http://[your-external-ip]:8082
 
-7. Install Jupyter Notebook
+## 7. Install Jupyter Notebook
 Still inside the VM terminal:
-source ~/flask_app/venv/bin/activate
-pip install jupyter
+source \~/flask_app/venv/bin/activate
 
-8. Launch Jupyter Notebook
+		pip install jupyter
+
+## 8. Launch Jupyter Notebook
 Start Jupyter server:
 jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root
 
 A token will be generated in the terminal output.
 
-9. Open Port 8888 (Firewall Rule)
+## 9. Open Port 8888 (Firewall Rule)
 Create another firewall rule:
 Field Value
 Name allow-8888
@@ -89,13 +97,16 @@ Now Jupyter Notebook is accessible at:
 http://<your-external-ip>:8888
 Login using the token.
 
-10. Clone GitHub Repository
-cd ~/flask_app
-git clone https://github.com/ModelEarth/realitystream.git
+## 10. Clone GitHub Repository
 
-11. Open and Run .ipynb File
+		cd ~/flask_app
+		git clone https://github.com/ModelEarth/realitystream.git
+
+## 11. Open and Run .ipynb File
+
 In Jupyter Notebook:
 Navigate to: realitystream/models/
 Open Run-Models-bkup.ipynb.
 Run the notebook cells.
-This runs the backup model notebook on the cloud server!
+
+This runs the backup model notebook on the Google cloud server
