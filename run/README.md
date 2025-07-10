@@ -47,6 +47,9 @@ For streamlined deployment using the automated configuration:
    ```
 
 2. **Run the automated deployment script:**
+
+Easiest to run the following from within Claude Code CLI cmd window or another AI CLI
+
    ```bash
    ./deploy.sh
    ```
