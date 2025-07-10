@@ -36,6 +36,51 @@ Promoted with: Create commands for creating a Google Cloud Run containing Flask 
    - Source repo: Contains the .ipynb notebook to execute
    - Target repo: Where the generated files will be pushed
 
+## Quick Deployment (Recommended)
+
+For streamlined deployment using the automated configuration:
+
+1. **Copy and configure environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your actual values
+   ```
+
+2. **Run the automated deployment script:**
+   ```bash
+   ./deploy.sh
+   ```
+
+The script will:
+- Create the Google Cloud project if needed
+- Enable required APIs
+- Create secrets in Secret Manager
+- Build and deploy the container to Cloud Run
+- Provide the service URL for webhook configuration
+
+## Manual Setup (Alternative)
+
+For step-by-step control, follow the detailed instructions below.
+
+## Recommended for Development
+
+Run [Claude Code CLI](https://www.anthropic.com/claude-code) inside cloud/run folder:
+
+    python3 -m venv env
+    source env/bin/activate
+
+For Windows,
+
+    python -m venv env
+    .\env\Scripts\activate
+
+Install [NodeJS 18+](https://nodejs.org/en/download), then install Claude Code CLI:
+
+    npm install -g @anthropic-ai/claude-code
+
+Start Claude Code CLI. A CLAUDE.md file already resides in run folder, so /init is not needed.
+
+    npx @anthropic-ai/claude-code
 
 
 ## Part 1: Set Up Google Cloud Project

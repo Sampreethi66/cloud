@@ -1,0 +1,64 @@
+# Google Cloud Configuration for automated deployment
+# This file contains default responses for gcloud init and setup commands
+
+project:
+  # Default project settings - customize these values
+  id: "modelearth-run-models-1"
+  name: "modelearth-run-models-1"
+  region: "us-central1"
+  zone: "us-central1-a"
+
+# Repository configuration
+github:
+  source_repo_url: "https://github.com/modelearth/cloud.git"
+  target_repo: "https://github.com/modelearth/reports.git"
+  notebook_path: "run/notebook.ipynb"
+
+# Service configuration
+service:
+  name: "notebook-executor"
+  platform: "managed"
+  allow_unauthenticated: true
+  
+# APIs to enable
+apis:
+  - cloudbuild.googleapis.com
+  - run.googleapis.com
+  - cloudscheduler.googleapis.com
+  - secretmanager.googleapis.com
+  - compute.googleapis.com
+  - container.googleapis.com
+
+# Secret Manager configuration
+secrets:
+  github_token:
+    name: "github-token"
+    description: "GitHub personal access token for repository operations"
+
+# Service Account configuration
+service_account:
+  name: "notebook-executor-sa"
+  display_name: "Notebook Executor Service Account"
+  roles:
+    - "roles/secretmanager.secretAccessor"
+    - "roles/cloudsql.client"
+
+# Container configuration
+container:
+  image_name: "notebook-executor"
+  port: 8080
+  timeout: 600
+  memory: "1Gi"
+  cpu: "1"
+
+# GitHub webhook configuration
+webhook:
+  endpoint: "/webhook"
+  events: ["push"]
+  branch: "main"
+
+# Scheduler configuration (optional)
+scheduler:
+  job_name: "notebook-executor-scheduler"
+  schedule: "0 */6 * * *"  # Every 6 hours
+  timezone: "America/New_York"

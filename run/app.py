@@ -3,6 +3,7 @@ import tempfile
 import subprocess
 import requests
 import json
+import yaml
 from flask import Flask, render_template, request, jsonify
 from google.cloud import secretmanager
 import git
@@ -12,10 +13,26 @@ from nbconvert import HTMLExporter
 
 app = Flask(__name__)
 
-# Configuration
-SOURCE_REPO_URL = "https://github.com/username/source-repo.git"
-TARGET_REPO = "datascape/RealityStream2025"
-NOTEBOOK_PATH = "path/to/notebook.ipynb"
+# Load configuration from config.yaml
+def load_config():
+    try:
+        with open('config.yaml', 'r') as f:
+            config = yaml.safe_load(f)
+        return config
+    except FileNotFoundError:
+        # Fallback configuration if config.yaml doesn't exist
+        return {
+            'github': {
+                'source_repo_url': 'https://github.com/modelearth/cloud.git',
+                'target_repo': 'https://github.com/modelearth/reports.git',
+                'notebook_path': 'run/notebook.ipynb'
+            }
+        }
+
+config = load_config()
+SOURCE_REPO_URL = config['github']['source_repo_url']
+TARGET_REPO = config['github']['target_repo']
+NOTEBOOK_PATH = config['github']['notebook_path']
 
 # Get the GitHub token from Secret Manager
 def get_github_token():
@@ -26,7 +43,8 @@ def get_github_token():
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    with open('page.html', 'r') as f:
+        return f.read()
 
 @app.route('/run-notebook', methods=['POST'])
 def run_notebook():
