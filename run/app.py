@@ -43,12 +43,12 @@ def get_github_token():
 
 @app.route('/')
 def home():
-    with open('index.html', 'r') as f:
+    with open('page.html', 'r') as f:
         return f.read()
 
-@app.route('/notebook')
-def notebook_page():
-    with open('page.html', 'r') as f:
+@app.route('/config')
+def config_page():
+    with open('index.html', 'r') as f:
         return f.read()
 
 @app.route('/get-config', methods=['GET'])
