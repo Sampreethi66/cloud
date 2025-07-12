@@ -2,22 +2,18 @@
 
 Our guide provides commands for Google Cloud Run service setup with Flask to execute a Jupyter notebook from a GitHub repository.
 
-- **Cmds for Google Cloud** - Creates a new project ID and enables necessary APIs
-- **GitHub integration** - Setting up access tokens and webhooks for repository updates
-- **Flask application** - Complete code for a web service with a button to trigger notebook execution
-- **Security setup** - Storing GitHub tokens securely in Secret Manager
-- **Notebook modification** - Adding the GitHub upload functionality to your notebook
-- **Deployment** - Commands to deploy the service to Cloud Run
-- **Automatic updates** - Setting up webhooks to update when your GitHub repo changes
-- **Service account permissions** - Configuring proper access for secure GitHub interactions
+**🚀 [View Resulting Site](https://notebook-executor-207223955365.us-central1.run.app)**
 
-The application creates a simple web interface with a button that, when pressed, will:
+## Features
 
-- Clone your GitHub repository (Later we'll sync when the repo changes instead.)
-- Execute the specified notebook
-- Push the resulting files to your target repository
+- **Configuration Interface** - Web-based form to edit settings without touching config files
+- **Automated Deployment** - Single command deployment with Claude Code CLI
+- **GitHub Integration** - Execute notebooks from GitHub repos and push results automatically
+- **Security** - GitHub tokens stored securely in Google Cloud Secret Manager
+- **Real-time Execution** - Run notebooks on-demand with web interface
+- **Auto-sync** - Webhook support for automatic updates when repos change
 
-The guide also includes options for setting up scheduled executions if you want the notebook to run automatically at specific intervals.
+The application creates a web interface with configuration management and notebook execution capabilities.
 
 [Our initial code was vibe-promoted with](https://claude.ai/public/artifacts/a3d76132-45f4-4155-aef8-4870adf64f20): Create commands for creating a Google Cloud Run containing Flask and use the resulting project ID to create a website that executes a .ipynb file that resides in a Github repo. Whenever the repo is updated, update the website. The .ipynb file will be triggered by a button on a page and it will push files to another GitHub repo. Set permissions in Google to allow the push from the Google server to occur. Here's the function we use to push the files. (I provided the upload_reports_to_github function from the last step in our Run Models colab.)
 
@@ -36,23 +32,49 @@ Promoted with: Create commands for creating a Google Cloud Run containing Flask 
    - Source repo: Contains the .ipynb notebook to execute
    - Target repo: Where the generated files will be pushed
 
-## Quick Deployment (Recommended)
+## Quick Deployment with Claude Code CLI (Recommended)
 
-For streamlined deployment using the automated configuration:
+### Step 1: Setup Claude Code CLI
 
-1. **Copy and configure environment variables:**
+1. **Install Node.js 18+** from [nodejs.org](https://nodejs.org/en/download)
+
+2. **Install Claude Code CLI:**
    ```bash
-   cp .env.example .env
-   # Edit .env with your actual values
+   npm install -g @anthropic-ai/claude-code
    ```
 
-2. **Run the automated deployment script:**
+3. **Navigate to the project directory:**
+   ```bash
+   cd cloud/run
+   ```
 
-Easiest to run the following from within Claude Code CLI cmd window or another AI CLI
+4. **Launch Claude Code CLI:**
+   ```bash
+   npx @anthropic-ai/claude-code
+   ```
 
+### Step 2: Deploy to Google Cloud
+
+1. **Configure environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your GitHub token and billing account
+   ```
+
+2. **Run automated deployment:**
    ```bash
    ./deploy.sh
    ```
+
+The deployment script will:
+- Create Google Cloud project and enable APIs
+- Set up GitHub token in Secret Manager  
+- Build and deploy container to Cloud Run
+- Provide the service URL
+
+### Alternative: Manual Deployment
+
+For step-by-step control, follow the detailed instructions below.
 
 The script will:
 - Create the Google Cloud project if needed

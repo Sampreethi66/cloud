@@ -43,8 +43,69 @@ def get_github_token():
 
 @app.route('/')
 def home():
+    with open('index.html', 'r') as f:
+        return f.read()
+
+@app.route('/notebook')
+def notebook_page():
     with open('page.html', 'r') as f:
         return f.read()
+
+@app.route('/get-config', methods=['GET'])
+def get_config():
+    try:
+        config = load_config()
+        return jsonify({
+            'status': 'success',
+            'config': config
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/save-config', methods=['POST'])
+def save_config():
+    try:
+        data = request.json
+        config = load_config()
+        
+        # Update configuration with form data
+        if 'projectId' in data:
+            config['project']['id'] = data['projectId']
+        if 'projectName' in data:
+            config['project']['name'] = data['projectName']
+        if 'region' in data:
+            config['project']['region'] = data['region']
+        if 'sourceRepo' in data:
+            config['github']['source_repo_url'] = data['sourceRepo']
+        if 'targetRepo' in data:
+            config['github']['target_repo'] = data['targetRepo']
+        if 'notebookPath' in data:
+            config['github']['notebook_path'] = data['notebookPath']
+        if 'serviceName' in data:
+            config['service']['name'] = data['serviceName']
+        
+        # Save updated configuration
+        with open('config.yaml', 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
+        
+        # Update global variables
+        global SOURCE_REPO_URL, TARGET_REPO, NOTEBOOK_PATH
+        SOURCE_REPO_URL = config['github']['source_repo_url']
+        TARGET_REPO = config['github']['target_repo']
+        NOTEBOOK_PATH = config['github']['notebook_path']
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Configuration saved successfully'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 @app.route('/run-notebook', methods=['POST'])
 def run_notebook():
