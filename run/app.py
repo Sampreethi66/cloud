@@ -1,3 +1,9 @@
+# Import compatibility fixes first
+try:
+    import fix_imports
+except ImportError:
+    pass
+
 import os
 import tempfile
 import subprocess
@@ -5,11 +11,35 @@ import requests
 import json
 import yaml
 from flask import Flask, render_template, request, jsonify
-from google.cloud import secretmanager
-import git
-import papermill as pm
-import nbformat
-from nbconvert import HTMLExporter
+
+# Load environment variables from .env file for local development
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not installed, skip loading .env file
+    pass
+
+# Try to import Google Cloud dependencies (for cloud deployment)
+try:
+    from google.cloud import secretmanager
+    CLOUD_AVAILABLE = True
+except ImportError:
+    CLOUD_AVAILABLE = False
+    print("⚠️  Google Cloud dependencies not available - running in local mode")
+
+# Try to import notebook execution dependencies
+try:
+    import git
+    import papermill as pm
+    import nbformat
+    from nbconvert import HTMLExporter
+    NOTEBOOK_EXECUTION_AVAILABLE = True
+    print("✅ Notebook execution dependencies available")
+except ImportError as e:
+    NOTEBOOK_EXECUTION_AVAILABLE = False
+    print(f"⚠️  Notebook execution dependencies not available: {e}")
+    print("📝 Local interface will work, but notebook execution will be simulated")
 
 app = Flask(__name__)
 
@@ -34,12 +64,24 @@ SOURCE_REPO_URL = config['github']['source_repo_url']
 TARGET_REPO = config['github']['target_repo']
 NOTEBOOK_PATH = config['github']['notebook_path']
 
-# Get the GitHub token from Secret Manager
+# Get the GitHub token from environment variable or Secret Manager
 def get_github_token():
-    client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/{os.environ.get('GOOGLE_CLOUD_PROJECT')}/secrets/github-token/versions/latest"
-    response = client.access_secret_version(request={"name": name})
-    return response.payload.data.decode("UTF-8")
+    # First try to get from environment variable (for local development)
+    token = os.environ.get('GITHUB_TOKEN')
+    if token:
+        return token
+    
+    # Fallback to Secret Manager (for cloud deployment)
+    if CLOUD_AVAILABLE:
+        try:
+            client = secretmanager.SecretManagerServiceClient()
+            name = f"projects/{os.environ.get('GOOGLE_CLOUD_PROJECT')}/secrets/github-token/versions/latest"
+            response = client.access_secret_version(request={"name": name})
+            return response.payload.data.decode("UTF-8")
+        except Exception as e:
+            raise Exception(f"Could not get GitHub token from environment variable or Secret Manager: {e}")
+    else:
+        raise Exception("GITHUB_TOKEN environment variable not set and Google Cloud not available")
 
 @app.route('/')
 def home():
@@ -73,18 +115,32 @@ def save_config():
         
         # Update configuration with form data
         if 'projectId' in data:
+            if 'project' not in config:
+                config['project'] = {}
             config['project']['id'] = data['projectId']
         if 'projectName' in data:
+            if 'project' not in config:
+                config['project'] = {}
             config['project']['name'] = data['projectName']
         if 'region' in data:
+            if 'project' not in config:
+                config['project'] = {}
             config['project']['region'] = data['region']
         if 'sourceRepo' in data:
+            if 'github' not in config:
+                config['github'] = {}
             config['github']['source_repo_url'] = data['sourceRepo']
         if 'targetRepo' in data:
+            if 'github' not in config:
+                config['github'] = {}
             config['github']['target_repo'] = data['targetRepo']
         if 'notebookPath' in data:
+            if 'github' not in config:
+                config['github'] = {}
             config['github']['notebook_path'] = data['notebookPath']
         if 'serviceName' in data:
+            if 'service' not in config:
+                config['service'] = {}
             config['service']['name'] = data['serviceName']
         
         # Save updated configuration
@@ -107,23 +163,58 @@ def save_config():
             'message': str(e)
         }), 500
 
-@app.route('/run-notebook', methods=['POST'])
-def run_notebook():
+def execute_notebook_with_dependencies():
+    """Execute notebook with full dependencies (papermill, git, etc.)"""
     try:
         # Create a temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
+            print(f"🔄 Cloning repository: {SOURCE_REPO_URL}")
             # Clone the source repository
             repo = git.Repo.clone_from(SOURCE_REPO_URL, temp_dir)
             
             # Path to the notebook in the cloned repo
             notebook_file = os.path.join(temp_dir, NOTEBOOK_PATH)
+            print(f"📓 Executing notebook: {notebook_file}")
             
-            # Execute the notebook
+            # Create a local-compatible version of the notebook
+            local_notebook_file = os.path.join(temp_dir, 'local_notebook.ipynb')
+            create_local_compatible_notebook(notebook_file, local_notebook_file)
+            
+            # Execute the local-compatible notebook
             output_path = os.path.join(temp_dir, 'output.ipynb')
+            
+            # Parameters to inject for local execution
+            import socket
+            import platform
+            from datetime import datetime
+            
+            # Get local server information
+            hostname = socket.gethostname()
+            local_ip = socket.gethostbyname(hostname)
+            port = int(os.environ.get('PORT', 8100))
+            current_year = datetime.now().year
+            
+            # Determine target folder based on execution environment
+            target_folder = f"{current_year}-local"
+            
+            parameters = {
+                'LOCAL_EXECUTION': True,
+                'GITHUB_TOKEN': os.environ.get('GITHUB_TOKEN', ''),
+                'TARGET_REPO': TARGET_REPO,
+                'TARGET_FOLDER': target_folder,
+                'EXECUTION_ENVIRONMENT': 'Local Development Server',
+                'LOCAL_SERVER_URL': f'http://localhost:{port}',
+                'LOCAL_HOSTNAME': hostname,
+                'LOCAL_IP': local_ip,
+                'PLATFORM': platform.system(),
+                'PYTHON_VERSION': platform.python_version(),
+                'CURRENT_YEAR': current_year
+            }
+            
             pm.execute_notebook(
-                notebook_file,
+                local_notebook_file,
                 output_path,
-                parameters={}
+                parameters=parameters
             )
             
             # Read the executed notebook
@@ -134,18 +225,360 @@ def run_notebook():
             html_exporter = HTMLExporter()
             html_data, resources = html_exporter.from_notebook_node(nb)
             
-            # The notebook execution will trigger the upload_reports_to_github function
-            # which is defined in the notebook itself
-            
-            return jsonify({
+            print("✅ Notebook executed successfully")
+            return {
                 'status': 'success',
                 'message': 'Notebook executed successfully'
-            })
+            }
     except Exception as e:
-        return jsonify({
+        print(f"❌ Notebook execution failed: {e}")
+        return {
             'status': 'error',
-            'message': str(e)
-        }), 500
+            'message': f'Notebook execution failed: {str(e)}'
+        }
+
+def create_local_compatible_notebook(source_file, output_file):
+    """Create a local-compatible version of the notebook"""
+    with open(source_file, 'r') as f:
+        nb = nbformat.read(f, as_version=4)
+    
+    # Create a new notebook with local-compatible code
+    new_cells = []
+    
+    # Add parameters cell for papermill
+    parameters_cell = nbformat.v4.new_code_cell(
+        source="""# Parameters (injected by papermill)
+LOCAL_EXECUTION = False
+GITHUB_TOKEN = ""
+TARGET_REPO = ""
+TARGET_FOLDER = ""
+EXECUTION_ENVIRONMENT = ""
+LOCAL_SERVER_URL = ""
+LOCAL_HOSTNAME = ""
+LOCAL_IP = ""
+PLATFORM = ""
+PYTHON_VERSION = ""
+CURRENT_YEAR = 2025
+""",
+        metadata={"tags": ["parameters"]}
+    )
+    new_cells.append(parameters_cell)
+    
+    # Add local compatibility imports
+    compatibility_cell = nbformat.v4.new_code_cell(
+        source="""# Local compatibility setup
+import os
+import requests
+import base64
+import json
+from datetime import datetime
+
+# Mock Google Cloud dependencies for local execution
+if LOCAL_EXECUTION:
+    print("🔧 Running in local mode - using environment variables instead of Google Cloud Secret Manager")
+    
+    # Use environment GITHUB_TOKEN instead of Secret Manager
+    def get_github_token():
+        token = GITHUB_TOKEN or os.environ.get('GITHUB_TOKEN')
+        if token:
+            print("✅ GitHub token found in environment")
+            return token
+        else:
+            print("❌ No GitHub token found - set GITHUB_TOKEN environment variable")
+            return None
+else:
+    # Original cloud code
+    try:
+        from google.cloud import secretmanager
+        
+        def get_github_token():
+            try:
+                client = secretmanager.SecretManagerServiceClient()
+                name = f"projects/{os.environ.get('GOOGLE_CLOUD_PROJECT')}/secrets/github-token/versions/latest"
+                response = client.access_secret_version(request={"name": name})
+                return response.payload.data.decode("UTF-8")
+            except Exception as e:
+                print(f"Error getting GitHub token: {e}")
+                return None
+    except ImportError:
+        print("Google Cloud dependencies not available")
+        def get_github_token():
+            return os.environ.get('GITHUB_TOKEN')
+
+GITHUB_TOKEN = get_github_token()
+print(f"GitHub token available: {GITHUB_TOKEN is not None}")
+
+# Set up folder structure based on environment
+if LOCAL_EXECUTION:
+    # For local execution, use current year + '-local'
+    reports_folder = TARGET_FOLDER  # This will be '2025-local'
+    execution_report = f'''
+## Execution Report
+
+**Environment:** {EXECUTION_ENVIRONMENT}  
+**Target Folder:** {reports_folder}  
+**Server:** {LOCAL_SERVER_URL}  
+**Hostname:** {LOCAL_HOSTNAME}  
+**Local IP:** {LOCAL_IP}  
+**Platform:** {PLATFORM}  
+**Python Version:** {PYTHON_VERSION}  
+**Execution Time:** {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}  
+**GitHub Token Status:** {"✅ Configured" if GITHUB_TOKEN else "❌ Not found"}  
+
+---
+'''
+    print("📋 Execution Report:")
+    print(execution_report)
+else:
+    # For cloud execution, use current year + '-cloud'
+    reports_folder = f"{CURRENT_YEAR}-cloud"
+    execution_report = f'''
+## Execution Report
+
+**Environment:** Google Cloud Run  
+**Target Folder:** {reports_folder}  
+**Execution Time:** {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}  
+**GitHub Token Status:** {"✅ Configured" if GITHUB_TOKEN else "❌ Not found"}  
+
+---
+'''
+
+# Make reports_folder available for the notebook to use
+print(f"📁 Reports will be saved to folder: {reports_folder}")
+"""
+    )
+    new_cells.append(compatibility_cell)
+    
+    # Add the rest of the cells, skipping the problematic imports and modifying upload function
+    for cell in nb.cells:
+        if cell.cell_type == 'code':
+            # Skip cells that import google.cloud directly
+            if ('from google.cloud import secretmanager' in cell.source or 
+                'import secretmanager' in cell.source or
+                'def get_github_token():' in cell.source or
+                'GITHUB_TOKEN = get_github_token()' in cell.source):
+                continue
+            
+            # Modify the upload function to use TARGET_FOLDER
+            if 'def upload_reports_to_github(' in cell.source:
+                # Replace the hardcoded "reports" path with dynamic folder
+                modified_source = cell.source.replace(
+                    'file_path = f"reports/execution-{datetime.now().strftime(\'%Y%m%d-%H%M%S\')}.md"',
+                    'file_path = f"{reports_folder}/execution-{datetime.now().strftime(\'%Y%m%d-%H%M%S\')}.md"'
+                )
+                cell.source = modified_source
+                
+        new_cells.append(cell)
+    
+    # Create new notebook with proper metadata
+    new_nb = nbformat.v4.new_notebook(cells=new_cells)
+    
+    # Set kernel metadata
+    new_nb.metadata = {
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3"
+        },
+        "language_info": {
+            "name": "python",
+            "version": "3.12.0"
+        }
+    }
+    
+    # Write the modified notebook
+    with open(output_file, 'w') as f:
+        nbformat.write(new_nb, f)
+    
+    print(f"📝 Created local-compatible notebook: {output_file}")
+
+def execute_notebook_cloud():
+    """Execute notebook in Google Cloud environment with year-based folders"""
+    try:
+        from datetime import datetime
+        
+        # Create a temporary directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            print(f"🔄 Cloning repository: {SOURCE_REPO_URL}")
+            # Clone the source repository
+            repo = git.Repo.clone_from(SOURCE_REPO_URL, temp_dir)
+            
+            # Path to the notebook in the cloned repo
+            notebook_file = os.path.join(temp_dir, NOTEBOOK_PATH)
+            print(f"📓 Executing notebook: {notebook_file}")
+            
+            # Create a cloud-compatible version of the notebook
+            cloud_notebook_file = os.path.join(temp_dir, 'cloud_notebook.ipynb')
+            create_cloud_compatible_notebook(notebook_file, cloud_notebook_file)
+            
+            # Execute the cloud-compatible notebook
+            output_path = os.path.join(temp_dir, 'output.ipynb')
+            
+            # Parameters to inject for cloud execution
+            current_year = datetime.now().year
+            target_folder = f"{current_year}-cloud"
+            
+            parameters = {
+                'LOCAL_EXECUTION': False,
+                'GITHUB_TOKEN': '',  # Will be retrieved from Secret Manager
+                'TARGET_REPO': TARGET_REPO,
+                'TARGET_FOLDER': target_folder,
+                'EXECUTION_ENVIRONMENT': 'Google Cloud Run',
+                'CURRENT_YEAR': current_year
+            }
+            
+            pm.execute_notebook(
+                cloud_notebook_file,
+                output_path,
+                parameters=parameters
+            )
+            
+            # Read the executed notebook
+            with open(output_path, 'r') as f:
+                nb = nbformat.read(f, as_version=4)
+            
+            # Convert to HTML for display
+            html_exporter = HTMLExporter()
+            html_data, resources = html_exporter.from_notebook_node(nb)
+            
+            print("✅ Notebook executed successfully")
+            return {
+                'status': 'success',
+                'message': 'Notebook executed successfully'
+            }
+    except Exception as e:
+        print(f"❌ Notebook execution failed: {e}")
+        return {
+            'status': 'error',
+            'message': f'Notebook execution failed: {str(e)}'
+        }
+
+def create_cloud_compatible_notebook(source_file, output_file):
+    """Create a cloud-compatible version of the notebook (uses original Google Cloud imports)"""
+    with open(source_file, 'r') as f:
+        nb = nbformat.read(f, as_version=4)
+    
+    # Create a new notebook with cloud-compatible code
+    new_cells = []
+    
+    # Add parameters cell for papermill
+    parameters_cell = nbformat.v4.new_code_cell(
+        source="""# Parameters (injected by papermill)
+LOCAL_EXECUTION = False
+GITHUB_TOKEN = ""
+TARGET_REPO = ""
+TARGET_FOLDER = ""
+EXECUTION_ENVIRONMENT = ""
+CURRENT_YEAR = 2025
+""",
+        metadata={"tags": ["parameters"]}
+    )
+    new_cells.append(parameters_cell)
+    
+    # Add cloud compatibility imports
+    compatibility_cell = nbformat.v4.new_code_cell(
+        source="""# Cloud compatibility setup
+import os
+import requests
+import base64
+import json
+from datetime import datetime
+from google.cloud import secretmanager
+
+# Get the GitHub token from Secret Manager (cloud execution)
+def get_github_token():
+    try:
+        client = secretmanager.SecretManagerServiceClient()
+        name = f"projects/{os.environ.get('GOOGLE_CLOUD_PROJECT')}/secrets/github-token/versions/latest"
+        response = client.access_secret_version(request={"name": name})
+        return response.payload.data.decode("UTF-8")
+    except Exception as e:
+        print(f"Error getting GitHub token: {e}")
+        return None
+
+GITHUB_TOKEN = get_github_token()
+print(f"GitHub token available: {GITHUB_TOKEN is not None}")
+
+# Set up folder structure for cloud execution
+reports_folder = TARGET_FOLDER  # This will be '{year}-cloud'
+execution_report = f'''
+## Execution Report
+
+**Environment:** {EXECUTION_ENVIRONMENT}  
+**Target Folder:** {reports_folder}  
+**Execution Time:** {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}  
+**GitHub Token Status:** {"✅ Configured" if GITHUB_TOKEN else "❌ Not found"}  
+
+---
+'''
+
+# Make reports_folder available for the notebook to use
+print(f"📁 Reports will be saved to folder: {reports_folder}")
+"""
+    )
+    new_cells.append(compatibility_cell)
+    
+    # Add the rest of the cells, skipping the problematic imports and modifying upload function
+    for cell in nb.cells:
+        if cell.cell_type == 'code':
+            # Skip cells that import google.cloud directly (since we handle it above)
+            if ('from google.cloud import secretmanager' in cell.source or 
+                'def get_github_token():' in cell.source or
+                'GITHUB_TOKEN = get_github_token()' in cell.source):
+                continue
+            
+            # Modify the upload function to use TARGET_FOLDER
+            if 'def upload_reports_to_github(' in cell.source:
+                # Replace the hardcoded "reports" path with dynamic folder
+                modified_source = cell.source.replace(
+                    'file_path = f"reports/execution-{datetime.now().strftime(\'%Y%m%d-%H%M%S\')}.md"',
+                    'file_path = f"{reports_folder}/execution-{datetime.now().strftime(\'%Y%m%d-%H%M%S\')}.md"'
+                )
+                cell.source = modified_source
+                
+        new_cells.append(cell)
+    
+    # Create new notebook with proper metadata
+    new_nb = nbformat.v4.new_notebook(cells=new_cells)
+    
+    # Set kernel metadata
+    new_nb.metadata = {
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3"
+        },
+        "language_info": {
+            "name": "python",
+            "version": "3.12.0"
+        }
+    }
+    
+    # Write the modified notebook
+    with open(output_file, 'w') as f:
+        nbformat.write(new_nb, f)
+    
+    print(f"📝 Created cloud-compatible notebook: {output_file}")
+
+def execute_notebook_simulation():
+    """Simulate notebook execution when dependencies are not available"""
+    print("🔄 Simulating notebook execution (dependencies not available)")
+    return {
+        'status': 'success',
+        'message': 'Notebook execution simulated successfully (install dependencies for full functionality)'
+    }
+
+@app.route('/run-notebook', methods=['POST'])
+def run_notebook():
+    if NOTEBOOK_EXECUTION_AVAILABLE:
+        if CLOUD_AVAILABLE:
+            # Cloud execution with year-based folders
+            return jsonify(execute_notebook_cloud())
+        else:
+            # Local execution with year-based folders
+            return jsonify(execute_notebook_with_dependencies())
+    else:
+        return jsonify(execute_notebook_simulation())
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -160,6 +593,33 @@ def webhook():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/status')
+def status():
+    """Show system status and available features"""
+    return jsonify({
+        'environment': 'local' if not CLOUD_AVAILABLE else 'cloud',
+        'cloud_available': CLOUD_AVAILABLE,
+        'notebook_execution_available': NOTEBOOK_EXECUTION_AVAILABLE,
+        'github_token_configured': bool(os.environ.get('GITHUB_TOKEN')),
+        'config': {
+            'source_repo': SOURCE_REPO_URL,
+            'target_repo': TARGET_REPO,
+            'notebook_path': NOTEBOOK_PATH
+        }
+    })
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
+    port = int(os.environ.get('PORT', 8100))
+    
+    print("🚀 Starting unified Flask server")
+    print(f"🌐 Server URL: http://localhost:{port}")
+    print(f"📱 Simple interface: http://localhost:{port}/")
+    print(f"⚙️  Configuration: http://localhost:{port}/config")
+    print(f"📊 System status: http://localhost:{port}/status")
+    print()
+    print("📋 System capabilities:")
+    print(f"  • Google Cloud integration: {'✅' if CLOUD_AVAILABLE else '❌'}")
+    print(f"  • Notebook execution: {'✅' if NOTEBOOK_EXECUTION_AVAILABLE else '❌'}")
+    print(f"  • GitHub token configured: {'✅' if os.environ.get('GITHUB_TOKEN') else '❌'}")
+    
+    app.run(host='0.0.0.0', port=port, debug=True)

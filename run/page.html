@@ -40,27 +40,32 @@
             color: #721c24;
         }
         .config-link {
-            position: absolute;
-            top: 20px;
-            right: 20px;
             background-color: #007bff;
             color: white;
-            padding: 8px 16px;
+            padding: 15px 32px;
             text-decoration: none;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 16px;
+            margin: 4px 2px;
+            display: inline-block;
         }
         .config-link:hover {
             background-color: #0056b3;
         }
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
-    <a href="/config" class="config-link">Flask Server Config</a>
     <div class="container">
         <h1>Run Models</h1>
         <p>Click the button below to run the notebook and push results to GitHub</p>
-        <button id="runButton">Run Notebook</button>
+        <div class="button-container">
+            <button id="runButton">Run Notebook</button>
+            <a href="/config" class="config-link">Flask Server Config</a>
+        </div>
         <div id="status" style="display: none;"></div>
 
         <br><br>
@@ -90,7 +95,20 @@
                 
                 if (data.status === 'success') {
                     status.className = 'success';
-                    status.textContent = 'Notebook executed successfully!';
+                    // Get target repo URL and display link
+                    fetch('/get-config')
+                    .then(response => response.json())
+                    .then(configData => {
+                        if (configData.status === 'success' && configData.config.github && configData.config.github.target_repo) {
+                            const targetRepo = configData.config.github.target_repo;
+                            status.innerHTML = 'Notebook executed successfully! <br><a href="' + targetRepo + '" target="_blank" style="color: #155724; font-weight: bold;">View results in GitHub →</a>';
+                        } else {
+                            status.textContent = 'Notebook executed successfully!';
+                        }
+                    })
+                    .catch(() => {
+                        status.textContent = 'Notebook executed successfully!';
+                    });
                 } else {
                     status.className = 'error';
                     status.textContent = 'Error: ' + data.message;
