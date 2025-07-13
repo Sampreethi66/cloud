@@ -11,7 +11,8 @@
       "Bash(pip install:*)",
       "Bash(python:*)",
       "Bash(cp:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }
