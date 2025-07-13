@@ -43,6 +43,25 @@ if 'distutils' not in sys.modules:
     try:
         import setuptools._distutils as distutils
         sys.modules['distutils'] = distutils
-        sys.modules['distutils.util'] = distutils.util
+        
+        # Import distutils.util specifically
+        try:
+            import setuptools._distutils.util as distutils_util
+            sys.modules['distutils.util'] = distutils_util
+        except ImportError:
+            # Create a minimal util module if not available
+            class DistutilsUtil:
+                @staticmethod
+                def strtobool(val):
+                    """Convert a string representation of truth to true (1) or false (0)."""
+                    val = val.lower()
+                    if val in ('y', 'yes', 't', 'true', 'on', '1'):
+                        return 1
+                    elif val in ('n', 'no', 'f', 'false', 'off', '0'):
+                        return 0
+                    else:
+                        raise ValueError("invalid truth value %r" % (val,))
+            
+            sys.modules['distutils.util'] = DistutilsUtil()
     except ImportError:
         pass
