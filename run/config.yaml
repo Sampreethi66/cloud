@@ -3,15 +3,15 @@
 
 project:
   # Default project settings - customize these values
-  id: "modelearth-run-models-1"
-  name: "modelearth-run-models-1"
+  id: "modelearth-run-models-001"
+  name: "ModelEarth Runner"
   region: "us-central1"
   zone: "us-central1-a"
 
 # Repository configuration
 github:
-  source_repo_url: "https://github.com/modelearth/cloud.git"
-  target_repo: "https://github.com/modelearth/reports.git"
+  source_repo_url: "https://github.com/AbhinavSivanandhan/cloud.git"
+  target_repo: "https://github.com/AbhinavSivanandhan/reports.git"
   notebook_path: "run/notebook.ipynb"
 
 # Service configuration
@@ -19,7 +19,7 @@ service:
   name: "notebook-executor"
   platform: "managed"
   allow_unauthenticated: true
-  
+
 # APIs to enable
 apis:
   - cloudbuild.googleapis.com
