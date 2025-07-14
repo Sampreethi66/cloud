@@ -12,7 +12,7 @@ project:
 github:
   source_repo_url: "https://github.com/AbhinavSivanandhan/cloud.git"
   target_repo: "https://github.com/AbhinavSivanandhan/reports.git"
-  notebook_path: "run/notebook.ipynb"
+  notebook_path: "run/notebook-test2.ipynb"
 
 # Service configuration
 service:
