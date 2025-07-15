@@ -5,7 +5,7 @@ import subprocess
 import requests
 import json
 import yaml
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
 from google.cloud import secretmanager
 import git
 import papermill as pm
@@ -14,14 +14,12 @@ from nbconvert import HTMLExporter
 
 app = Flask(__name__)
 
-# Load configuration from config.yaml
+# === Load configuration from config.yaml ===
 def load_config():
     try:
         with open('config.yaml', 'r') as f:
-            config = yaml.safe_load(f)
-        return config
+            return yaml.safe_load(f)
     except FileNotFoundError:
-        # Fallback configuration if config.yaml doesn't exist
         return {
             'github': {
                 'source_repo_url': 'https://github.com/AbhinavSivanandhan/cloud.git',
@@ -33,21 +31,20 @@ def load_config():
 config = load_config()
 SOURCE_REPO_URL = config['github']['source_repo_url']
 TARGET_REPO = config['github']['target_repo']
-NOTEBOOK_PATH = config['github']['notebook_path']
+DEFAULT_NOTEBOOK_PATH = config['github']['notebook_path']
 
-# Get the GitHub token from Secret Manager
+# === Retrieve GitHub token from Secret Manager ===
 def get_github_token():
     try:
         client = secretmanager.SecretManagerServiceClient()
         project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
-        print(f"[DEBUG] Project ID for Secret Manager: {project_id}", file=sys.stderr)
         name = f"projects/{project_id}/secrets/github-token/versions/latest"
         response = client.access_secret_version(request={"name": name})
         token = response.payload.data.decode("UTF-8")
-        print(f"[DEBUG] GitHub token fetched successfully. Token length: {len(token)}", file=sys.stderr)
+        print(f"[DEBUG] GitHub token retrieved. Length: {len(token)}", file=sys.stderr)
         return token
     except Exception as e:
-        print(f"[ERROR] Failed to access GitHub token from Secret Manager: {e}", file=sys.stderr)
+        print(f"[ERROR] Secret Manager error: {e}", file=sys.stderr)
         return None
 
 @app.route('/')
@@ -56,80 +53,79 @@ def home():
         with open('page.html', 'r') as f:
             return f.read()
     except Exception as e:
-        print(f"[ERROR] Failed to load page.html: {e}", file=sys.stderr)
+        print(f"[ERROR] Failed to load homepage: {e}", file=sys.stderr)
         return "<h2>Error loading homepage</h2>", 500
 
 @app.route('/run-notebook', methods=['POST'])
 def run_notebook():
     try:
-        print(f"[INFO] Triggered /run-notebook", file=sys.stderr)
+        print(f"[INFO] /run-notebook triggered", file=sys.stderr)
 
-        # Create a temporary directory
+        payload = request.get_json(force=True, silent=True) or {}
+        notebook_path = payload.get("notebook_path", DEFAULT_NOTEBOOK_PATH)
+        parameters = payload.get("parameters", {})
+
+        # Create a temp directory
         with tempfile.TemporaryDirectory() as temp_dir:
-            print(f"[DEBUG] Created temp dir: {temp_dir}", file=sys.stderr)
+            print(f"[DEBUG] Cloning {SOURCE_REPO_URL} into {temp_dir}", file=sys.stderr)
+            git.Repo.clone_from(SOURCE_REPO_URL, temp_dir)
 
-            # Clone the source repository
-            print(f"[DEBUG] Cloning from repo: {SOURCE_REPO_URL}", file=sys.stderr)
-            repo = git.Repo.clone_from(SOURCE_REPO_URL, temp_dir)
+            notebook_file = os.path.join(temp_dir, notebook_path)
+            output_path = os.path.join(temp_dir, 'executed.ipynb')
 
-            # Path to the notebook in the cloned repo
-            notebook_file = os.path.join(temp_dir, NOTEBOOK_PATH)
-            print(f"[DEBUG] Notebook file path: {notebook_file}", file=sys.stderr)
+            if not os.path.exists(notebook_file):
+                raise FileNotFoundError(f"Notebook not found: {notebook_file}")
 
-            # Execute the notebook
-            output_path = os.path.join(temp_dir, 'output.ipynb')
-            print(f"[DEBUG] Executing notebook → Output path: {output_path}", file=sys.stderr)
+            print(f"[DEBUG] Executing notebook: {notebook_path}", file=sys.stderr)
 
-            pm.execute_notebook(
-                notebook_file,
-                output_path,
-                parameters={}
-            )
+            try:
+                pm.execute_notebook(
+                    notebook_file,
+                    output_path,
+                    parameters=parameters
+                )
+                print(f"[DEBUG] Notebook executed", file=sys.stderr)
+            except Exception as e:
+                print(f"[ERROR] Notebook execution failed: {e}", file=sys.stderr)
+                return jsonify({'status': 'error', 'message': f"Execution failed: {str(e)}"}), 500
 
-            print(f"[DEBUG] Notebook executed successfully", file=sys.stderr)
+            # Optional: convert notebook to HTML for local viewing/debugging
+            try:
+                with open(output_path, 'r') as f:
+                    nb = nbformat.read(f, as_version=4)
+                html_exporter = HTMLExporter()
+                html_data, _ = html_exporter.from_notebook_node(nb)
+                print(f"[DEBUG] Notebook HTML size: {len(html_data)} bytes", file=sys.stderr)
+            except Exception as e:
+                print(f"[WARN] Failed to convert notebook to HTML: {e}", file=sys.stderr)
 
-            # Read the executed notebook
-            with open(output_path, 'r') as f:
-                nb = nbformat.read(f, as_version=4)
-
-            # Convert to HTML for display
-            html_exporter = HTMLExporter()
-            html_data, resources = html_exporter.from_notebook_node(nb)
-            print(f"[DEBUG] Converted notebook to HTML. Length: {len(html_data)} bytes", file=sys.stderr)
-
-            # The notebook execution will trigger the upload_reports_to_github function
-            # which is defined in the notebook itself
-
+            # Upload is handled by the notebook itself
             return jsonify({
                 'status': 'success',
                 'message': 'Notebook executed successfully'
             })
 
     except Exception as e:
-        print(f"[ERROR] Exception in /run-notebook: {e}", file=sys.stderr)
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        print(f"[ERROR] /run-notebook error: {e}", file=sys.stderr)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     """Handle webhook from GitHub to update when the repo changes"""
     try:
         payload = request.json
-        print(f"[DEBUG] Webhook payload received: {json.dumps(payload)}", file=sys.stderr)
+        print(f"[DEBUG] Webhook payload: {json.dumps(payload)}", file=sys.stderr)
 
-        if 'ref' in payload and payload['ref'] == 'refs/heads/main':
-            # Pull the latest changes
+        if payload.get('ref') == 'refs/heads/main':
             subprocess.run(["git", "pull"], cwd="/app")
-            print("[DEBUG] Repo updated via webhook", file=sys.stderr)
+            print("[DEBUG] Git pull triggered", file=sys.stderr)
             return jsonify({'status': 'success'})
         return jsonify({'status': 'no action'})
     except Exception as e:
-        print(f"[ERROR] Exception in webhook handler: {e}", file=sys.stderr)
+        print(f"[ERROR] Webhook handler failed: {e}", file=sys.stderr)
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
-    print(f"[INFO] Starting app on port {port}", file=sys.stderr)
+    print(f"[INFO] Flask app running on port {port}", file=sys.stderr)
     app.run(host='0.0.0.0', port=port)
