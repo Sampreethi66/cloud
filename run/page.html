@@ -19,8 +19,6 @@
             color: white;
             padding: 15px 32px;
             text-align: center;
-            text-decoration: none;
-            display: inline-block;
             font-size: 16px;
             margin: 4px 2px;
             cursor: pointer;
@@ -39,6 +37,16 @@
             background-color: #f8d7da;
             color: #721c24;
         }
+        #params {
+            margin-top: 30px;
+            text-align: left;
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -48,45 +56,70 @@
         <button id="runButton">Run Notebook</button>
         <div id="status" style="display: none;"></div>
 
-        <br><br>
-        
+        <div id="params"></div>
     </div>
 
     <script>
-        document.getElementById('runButton').addEventListener('click', function() {
-            const button = this;
-            const status = document.getElementById('status');
-            
-            button.disabled = true;
-            button.textContent = 'Processing...';
-            status.style.display = 'none';
-            
-            fetch('/run-notebook', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                button.disabled = false;
-                button.textContent = 'Run Notebook';
-                status.style.display = 'block';
-                
-                if (data.status === 'success') {
-                    status.className = 'success';
-                    status.textContent = 'Notebook executed successfully!';
-                } else {
+        function parseHashParams() {
+            const hash = window.location.hash.substring(1); // Remove the #
+            const params = {};
+            hash.split('&').forEach(pair => {
+                const [key, value] = pair.split('=');
+                if (key) params[key] = decodeURIComponent(value || '');
+            });
+            return params;
+        }
+
+        function displayParams(params) {
+            const paramDiv = document.getElementById('params');
+            if (Object.keys(params).length === 0) {
+                paramDiv.style.display = 'none';
+                return;
+            }
+            paramDiv.style.display = 'block';
+            paramDiv.textContent = 'Parameters:\n' + JSON.stringify(params, null, 2);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = parseHashParams();
+            displayParams(params);
+
+            document.getElementById('runButton').addEventListener('click', function () {
+                const button = this;
+                const status = document.getElementById('status');
+
+                button.disabled = true;
+                button.textContent = 'Processing...';
+                status.style.display = 'none';
+
+                fetch('/run-notebook', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        parameters: params  // Send parsed hash as parameters
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    button.disabled = false;
+                    button.textContent = 'Run Notebook';
+                    status.style.display = 'block';
+
+                    if (data.status === 'success') {
+                        status.className = 'success';
+                        status.textContent = 'Notebook executed successfully!';
+                    } else {
+                        status.className = 'error';
+                        status.textContent = 'Error: ' + data.message;
+                    }
+                })
+                .catch(error => {
+                    button.disabled = false;
+                    button.textContent = 'Run Notebook';
+                    status.style.display = 'block';
                     status.className = 'error';
-                    status.textContent = 'Error: ' + data.message;
-                }
-            })
-            .catch(error => {
-                button.disabled = false;
-                button.textContent = 'Run Notebook';
-                status.style.display = 'block';
-                status.className = 'error';
-                status.textContent = 'Error: ' + error.message;
+                    status.textContent = 'Error: ' + error.message;
+                });
             });
         });
     </script>
