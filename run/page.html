@@ -18,9 +18,8 @@
             border: none;
             color: white;
             padding: 15px 32px;
-            text-align: center;
             font-size: 16px;
-            margin: 4px 2px;
+            margin: 8px 2px;
             cursor: pointer;
             border-radius: 4px;
         }
@@ -37,6 +36,13 @@
             background-color: #f8d7da;
             color: #721c24;
         }
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            font-size: 14px;
+            margin-top: 20px;
+        }
         #params {
             margin-top: 30px;
             text-align: left;
@@ -45,20 +51,28 @@
             border-radius: 5px;
             font-family: monospace;
             white-space: pre-wrap;
-            display: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Run Models</h1>
-        <p>Click the button below to run the notebook and push results to GitHub</p>
+        <p>Paste optional <strong>YAML parameters</strong> below (or leave empty to use URL hash)</p>
+        <textarea id="yamlInput" placeholder="folder: example-folder
+features:
+  data: industries
+  path: https://example.com/data.csv
+targets:
+  data: bees
+  path: https://example.com/bees.csv
+models: xgboost"></textarea>
+
         <button id="runButton">Run Notebook</button>
         <div id="status" style="display: none;"></div>
-
-        <div id="params"></div>
+        <div id="params" style="display: none;"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <script>
         function parseHashParams() {
             const hash = window.location.hash.substring(1); // Remove the #
@@ -70,39 +84,55 @@
             return params;
         }
 
-        function displayParams(params) {
+        function displayParams(obj) {
             const paramDiv = document.getElementById('params');
-            if (Object.keys(params).length === 0) {
+            if (!obj || Object.keys(obj).length === 0) {
                 paramDiv.style.display = 'none';
                 return;
             }
             paramDiv.style.display = 'block';
-            paramDiv.textContent = 'Parameters:\n' + JSON.stringify(params, null, 2);
+            paramDiv.textContent = 'Parameters:\n' + JSON.stringify(obj, null, 2);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const params = parseHashParams();
-            displayParams(params);
+            const runButton = document.getElementById('runButton');
+            const yamlInput = document.getElementById('yamlInput');
+            const status = document.getElementById('status');
 
-            document.getElementById('runButton').addEventListener('click', function () {
-                const button = this;
-                const status = document.getElementById('status');
-
-                button.disabled = true;
-                button.textContent = 'Processing...';
+            runButton.addEventListener('click', () => {
                 status.style.display = 'none';
+                runButton.disabled = true;
+                runButton.textContent = 'Processing...';
+
+                let finalParams = {};
+
+                try {
+                    const rawYaml = yamlInput.value.trim();
+                    if (rawYaml) {
+                        finalParams = jsyaml.load(rawYaml);
+                    } else {
+                        finalParams = parseHashParams();
+                    }
+                } catch (e) {
+                    status.className = 'error';
+                    status.style.display = 'block';
+                    status.textContent = 'Invalid YAML: ' + e.message;
+                    runButton.disabled = false;
+                    runButton.textContent = 'Run Notebook';
+                    return;
+                }
+
+                displayParams(finalParams);
 
                 fetch('/run-notebook', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        parameters: params  // Send parsed hash as parameters
-                    })
+                    body: JSON.stringify({ parameters: finalParams })
                 })
                 .then(response => response.json())
                 .then(data => {
-                    button.disabled = false;
-                    button.textContent = 'Run Notebook';
+                    runButton.disabled = false;
+                    runButton.textContent = 'Run Notebook';
                     status.style.display = 'block';
 
                     if (data.status === 'success') {
@@ -114,11 +144,11 @@
                     }
                 })
                 .catch(error => {
-                    button.disabled = false;
-                    button.textContent = 'Run Notebook';
+                    runButton.disabled = false;
+                    runButton.textContent = 'Run Notebook';
                     status.style.display = 'block';
                     status.className = 'error';
-                    status.textContent = 'Error: ' + error.message;
+                    status.textContent = 'Request failed: ' + error.message;
                 });
             });
         });
