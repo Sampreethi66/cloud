@@ -60,6 +60,7 @@ def home():
 def run_notebook():
     try:
         print(f"[INFO] /run-notebook triggered", file=sys.stderr)
+        print(f"[DEBUG] Received parameters: {json.dumps(parameters)}", file=sys.stderr)
 
         payload = request.get_json(force=True, silent=True) or {}
         notebook_path = payload.get("notebook_path", DEFAULT_NOTEBOOK_PATH)
