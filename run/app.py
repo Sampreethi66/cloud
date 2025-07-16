@@ -24,7 +24,7 @@ def load_config():
             'github': {
                 'source_repo_url': 'https://github.com/modelearth/cloud.git',
                 'target_repo': 'https://github.com/modelearth/reports.git',
-                'notebook_path': 'run/notebook-test2.ipynb'
+                'notebook_path': 'run/notebook.ipynb'
             }
         }
 
@@ -89,7 +89,7 @@ def run_notebook():
                 print(f"[ERROR] Notebook execution failed: {e}", file=sys.stderr)
                 return jsonify({'status': 'error', 'message': f"Execution failed: {str(e)}"}), 500
 
-            # Optional: convert notebook to HTML for local viewing/debugging
+            # convert notebook to HTML for local viewing/debugging
             try:
                 with open(output_path, 'r') as f:
                     nb = nbformat.read(f, as_version=4)

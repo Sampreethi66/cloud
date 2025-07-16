@@ -3,8 +3,8 @@
 
 project:
   # Default project settings - customize these values
-  id: "modelearth-run-models-001"
-  name: "ModelEarth Runner"
+  id: "modelearth-run-models-1"
+  name: "modelearth-run-models-1"
   region: "us-central1"
   zone: "us-central1-a"
 
@@ -12,7 +12,7 @@ project:
 github:
   source_repo_url: "https://github.com/modelearth/cloud.git"
   target_repo: "https://github.com/modelearth/reports.git"
-  notebook_path: "run/notebook-test2.ipynb"
+  notebook_path: "run/notebook.ipynb"
 
 # Service configuration
 service:
