@@ -4,7 +4,15 @@
       "Bash(gcloud logging read:*)",
       "Bash(gcloud run services describe:*)",
       "Bash(gcloud builds submit:*)",
-      "Bash(gcloud run deploy:*)"
+      "Bash(gcloud run deploy:*)",
+      "Bash(ls:*)",
+      "Bash(pkill:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(cp:*)",
+      "Bash(curl:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }
