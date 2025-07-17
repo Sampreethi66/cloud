@@ -12,3 +12,8 @@ gitpython==3.1.24
 pyyaml==6.0.2
 lxml[html_clean]==4.9.3
 python-dotenv==1.0.0
+matplotlib
+pandas
+fpdf
+plotly
+numpy

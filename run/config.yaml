@@ -19,7 +19,7 @@ service:
   name: "notebook-executor"
   platform: "managed"
   allow_unauthenticated: true
-  
+
 # APIs to enable
 apis:
   - cloudbuild.googleapis.com
