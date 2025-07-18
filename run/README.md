@@ -114,6 +114,8 @@ TO DO: Let's add a form here where users can enter their Google ProjectID, GitHu
 Let's also creat deployment cmds for [Thundercompute.com](https://www.thundercompute.com)
 
 
+NOTE: Run the gcloud cmd in Claude Code CLI and you won't need to install gcloud.
+
 Initialize gcloud - Open a terminal in the folder where your site will reside. (For example: cloud/run/site)
 Optionally, skip diagnostics during init.
 
