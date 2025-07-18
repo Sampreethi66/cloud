@@ -2,20 +2,13 @@ function updateYAMLFromHash(parsedContent, hash, addHashKeys) {
     // Sets nested yaml values for textbox while preserving existing structure
     function setNestedValue(obj, path, value) {
         const keys = path.split('.');
-        const rootKey = keys[0];
-        
-        // Check if root key is in allowed keys
-        if (!addHashKeys.includes(rootKey)) {
-            return;
-        }
-        
         let current = obj;
         
         for (let i = 0; i < keys.length - 1; i++) {
             const key = keys[i];
             // Preserve existing object or create new one if doesn't exist
             current[key] = current[key] || {};
-            current = decodeURIComponent(current[key]);
+            current = current[key];
         }
         
         // Set the value at the final key
@@ -33,14 +26,19 @@ function updateYAMLFromHash(parsedContent, hash, addHashKeys) {
         return value;
     }
 
+    // Check if a path should be included based on addHashKeys
+    function shouldIncludePath(path) {
+        const rootKey = path.split('.')[0];
+        return addHashKeys.includes(rootKey);
+    }
+
     // Traverse hash and update parsedContent
     function traverseAndUpdate(obj, prefix = '') {
         Object.keys(obj).forEach(key => {
             const currentPath = prefix ? `${prefix}.${key}` : key;
-            const rootKey = currentPath.split('.')[0];
             
-            // Skip if root key is not in allowed keys
-            if (!addHashKeys.includes(rootKey)) {
+            // Skip if this path doesn't match our allowed root keys
+            if (!shouldIncludePath(currentPath)) {
                 return;
             }
             
@@ -72,7 +70,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let hash = getHash();
     console.log("hash:");
     console.log(hash);
-    //alert(hash.features.path1)
+    //alert(hash.features) // Work regardless of hash
+    console.log(hash.features?.dcid)
+    
     modelHashParams = ["features", "targets", "models"];
     insertHashValues(modelHashParams);
     function insertHashValues(modelHashParams) {
@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
       parsedContent = updateYAMLFromHash(parsedContent, hash, addHashKeys);
       preContent = convertToYAML(parsedContent);
       preTag.innerHTML = preContent;
+      //alert(preContent)
     }
 
     // Helper function to parse YAML into a JavaScript object
