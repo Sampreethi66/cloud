@@ -9,6 +9,13 @@ from utils.compat_utils import (
     create_local_compatible_notebook,
     create_cloud_compatible_notebook
 )
+from utils.config_utils import load_config
+
+CONFIG = load_config()
+SOURCE_REPO_URL = CONFIG['github']['source_repo_url']
+TARGET_REPO = CONFIG['github']['target_repo']
+NOTEBOOK_PATH = CONFIG['github']['notebook_path']
+
 
 def execute_notebook_with_dependencies():
     """Execute notebook with full dependencies (papermill, git, etc.)"""
@@ -153,3 +160,10 @@ def execute_notebook_simulation():
         'status': 'success',
         'message': 'Notebook execution simulated successfully (install dependencies for full functionality)'
     }
+
+try:
+    import papermill
+    import nbconvert
+    NOTEBOOK_EXECUTION_AVAILABLE = True
+except ImportError:
+    NOTEBOOK_EXECUTION_AVAILABLE = False

@@ -1,8 +1,15 @@
 from flask import Blueprint, request, jsonify
+import sys, os, json, tempfile, nbformat, git
+from nbconvert import HTMLExporter
+import papermill as pm
+from utils.notebook_utils import NOTEBOOK_PATH
+
+from utils.config_utils import load_config
 from utils.notebook_utils import (
     execute_notebook_with_dependencies,
     execute_notebook_cloud,
-    execute_notebook_simulation
+    execute_notebook_simulation,
+    NOTEBOOK_EXECUTION_AVAILABLE  # <- this is where you should expose it from
 )
 
 notebook_blueprint = Blueprint('notebook', __name__)
