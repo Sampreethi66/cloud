@@ -3,14 +3,14 @@ function updateYAMLFromHash(parsedContent, hash, addHashKeys) {
     function setNestedValue(obj, path, value) {
         const keys = path.split('.');
         let current = obj;
-        
+
         for (let i = 0; i < keys.length - 1; i++) {
             const key = keys[i];
             // Preserve existing object or create new one if doesn't exist
             current[key] = current[key] || {};
             current = current[key];
         }
-        
+
         // Set the value at the final key
         const lastKey = keys[keys.length - 1];
         current[lastKey] = value;
@@ -36,12 +36,12 @@ function updateYAMLFromHash(parsedContent, hash, addHashKeys) {
     function traverseAndUpdate(obj, prefix = '') {
         Object.keys(obj).forEach(key => {
             const currentPath = prefix ? `${prefix}.${key}` : key;
-            
+
             // Skip if this path doesn't match our allowed root keys
             if (!shouldIncludePath(currentPath)) {
                 return;
             }
-            
+
             if (typeof obj[key] === 'object' && obj[key] !== null) {
                 // If value is an object, recurse deeper
                 traverseAndUpdate(obj[key], currentPath);
@@ -59,10 +59,30 @@ function updateYAMLFromHash(parsedContent, hash, addHashKeys) {
     return parsedContent;
 }
 
+function parseHashParams() {
+    const hash = window.location.hash.substring(1);
+    const params = {};
+    hash.split('&').forEach(pair => {
+      const [key, value] = pair.split('=');
+      if (key) params[key] = decodeURIComponent(value || '');
+    });
+    return params;
+  }
+
+  function displayParams(obj) {
+    const paramDiv = document.getElementById('params');
+    if (!obj || Object.keys(obj).length === 0) {
+      paramDiv.style.display = 'none';
+      return;
+    }
+    paramDiv.style.display = 'block';
+    paramDiv.textContent = 'Parameters:\n' + JSON.stringify(obj, null, 2);
+  }
+
 document.addEventListener('DOMContentLoaded', function() {
   loadParamText();
   function loadParamText() {
-    
+
     const paramTextDiv = document.getElementById('paramText');
     const preTag = paramTextDiv.querySelector('pre');
     let preContent = preTag.innerHTML;
@@ -72,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log(hash);
     //alert(hash.features) // Work regardless of hash
     console.log(hash.features?.dcid)
-    
+
     modelHashParams = ["features", "targets", "models"];
     insertHashValues(modelHashParams);
     function insertHashValues(modelHashParams) {
@@ -119,17 +139,17 @@ function yamlToUrlParams(yamlStr) {
     const lines = yamlStr.split('\n');
     const params = {};
     let currentKey = null;
-    
+
     for (const line of lines) {
         if (line.trim() === '' || line.trim().startsWith('#')) continue;
-        
+
         const indent = line.search(/\S|$/);
         const colonIndex = line.indexOf(':');
-        
+
         if (colonIndex > 0) {
             const key = line.substring(0, colonIndex).trim();
             let value = line.substring(colonIndex + 1).trim();
-            
+
             if (indent === 0) {
                 // Top level key
                 currentKey = key;
@@ -143,7 +163,7 @@ function yamlToUrlParams(yamlStr) {
                 if (typeof params[currentKey] !== 'object' || Array.isArray(params[currentKey])) {
                     params[currentKey] = {};
                 }
-                
+
                 if (value) {
                     params[currentKey][key] = value;
                 } else {
@@ -153,21 +173,21 @@ function yamlToUrlParams(yamlStr) {
         } else if (line.trim().startsWith('-')) {
             // Handle array items
             const value = line.trim().substring(1).trim();
-            
+
             if (!Array.isArray(params[currentKey])) {
                 params[currentKey] = [];
             }
             params[currentKey].push(value);
         }
     }
-    
+
     // Convert to URL hash format with proper nesting and URL encoding
     const hashParams = [];
-    
+
     function addParams(obj, prefix = '') {
         for (const [key, value] of Object.entries(obj)) {
             const paramKey = prefix ? `${prefix}.${key}` : key;
-            
+
             if (typeof value === 'string') {
                 hashParams.push(`${paramKey}=${encodeURIComponent(value)}`);
             } else if (Array.isArray(value)) {
@@ -184,9 +204,9 @@ function yamlToUrlParams(yamlStr) {
             }
         }
     }
-    
+
     addParams(params);
-    
+
     const result = hashParams.join('&');
     console.log("Generated URL parameters:", result);
     return result;

@@ -6,6 +6,11 @@ app = Flask(__name__)
 app.register_blueprint(core_blueprint)
 app.register_blueprint(notebook_blueprint)
 
+# Serve JS files
+@app.route('/js/<path:filename>')
+def serve_js(filename):
+    return send_from_directory('js', filename)
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 8100))
