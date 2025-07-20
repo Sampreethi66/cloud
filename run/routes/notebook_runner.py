@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 import sys, os, json, tempfile, nbformat, git
 from nbconvert import HTMLExporter
 import papermill as pm
-from utils.notebook_utils import NOTEBOOK_PATH
+from utils.notebook_utils import NOTEBOOK_PATH, SOURCE_REPO_URL, TARGET_REPO
 
 from utils.config_utils import load_config
 from utils.notebook_utils import (
