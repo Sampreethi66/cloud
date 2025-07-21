@@ -299,6 +299,7 @@ The location link does not yet pass values to the param yaml.<br><br>
                 status.innerHTML = 'Notebook executed successfully!<br><a href="' + targetRepo + '" target="_blank" style="color: #155724; font-weight: bold;">View results in GitHub →</a>';
               } else {
                 status.textContent = 'Notebook executed successfully!';
+              }
                 if (gonext) {
                   const redirectMsg = document.createElement('div');
                   redirectMsg.style.marginTop = '10px';
@@ -310,7 +311,6 @@ The location link does not yet pass values to the param yaml.<br><br>
                     window.location.href = gonext;
                   }, 2000);
                 }
-              }
             })
             .catch(() => {
               status.textContent = 'Notebook executed successfully!';
