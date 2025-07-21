@@ -80,8 +80,26 @@ def run_notebook():
 
 @notebook_blueprint.route('/list-notebook-steps', methods=['GET'])
 def list_notebook_steps():
-    # Hardcoded list (matches tags used in the notebook)
-    return jsonify({
-        'status': 'success',
-        'steps': ['debug', 'log_summary']
-    })
+    try:
+        # Load the notebook file
+        with open(NOTEBOOK_PATH, 'r') as f:
+            nb = nbformat.read(f, as_version=4)
+
+        # Extract all tags like "step:debug" → "debug"
+        step_tags = set()
+        for cell in nb.cells:
+            tags = cell.metadata.get("tags", [])
+            for tag in tags:
+                if tag.startswith("step:"):
+                    step_tags.add(tag.split("step:")[1])
+
+        return jsonify({
+            "status": "success",
+            "steps": sorted(step_tags)
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
