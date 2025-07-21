@@ -170,60 +170,17 @@ The location link does not yet pass values to the param yaml.<br><br>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
    <script src="js/param-input.js"></script>
 
-  <script>
-    // Resides in js/param-input.js which is shared within realitystream/index.html
-    /*
-    function parseHashParams() {
-      const hash = window.location.hash.substring(1);
-      const params = {};
-      hash.split('&').forEach(pair => {
-        const [key, value] = pair.split('=');
-        if (key) params[key] = decodeURIComponent(value || '');
-      });
-      return params;
-    }
-
-    function displayParams(obj) {
-      const paramDiv = document.getElementById('params');
-      if (!obj || Object.keys(obj).length === 0) {
-        paramDiv.style.display = 'none';
-        return;
-      }
-      paramDiv.style.display = 'block';
-      paramDiv.textContent = 'Parameters:\n' + JSON.stringify(obj, null, 2);
-    }
-    */
-    function getHash() {
-      const raw = window.location.hash.substring(1);
-      const result = {};
-      raw.split("&").forEach(pair => {
-        const [key, val] = pair.split("=");
-        if (!key) return;
-        // Parse dot notation: e.g., targets.dcid
-        const keys = key.split(".");
-        let ref = result;
-        keys.forEach((k, i) => {
-          if (i === keys.length - 1) {
-            ref[k] = decodeURIComponent(val || '');
-          } else {
-            ref[k] = ref[k] || {};
-            ref = ref[k];
-          }
-        });
-      });
-      return result;
-    }
-
+   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const hash = getHash();
-      const gonext = hash.gonext;
+      const gonext = hash.gonext; // ✅ save here to use later
       const runButton = document.getElementById('runButton');
       const yamlInput = document.getElementById('yamlInput');
       const status = document.getElementById('status');
       const stepsToggle = document.getElementById('enableSteps');
-
       const stepsContainer = document.getElementById('stepsContainer');
       let availableSteps = [];
+
       stepsToggle.addEventListener('change', () => {
         if (stepsToggle.checked) {
           fetch('/list-notebook-steps')
@@ -247,14 +204,12 @@ The location link does not yet pass values to the param yaml.<br><br>
         }
       });
 
-
       runButton.addEventListener('click', () => {
         status.style.display = 'none';
         runButton.disabled = true;
         runButton.textContent = 'Processing...';
 
         let finalParams = {};
-
         try {
           const rawYaml = yamlInput.value.trim();
           finalParams = rawYaml ? jsyaml.load(rawYaml) : parseHashParams();
@@ -268,11 +223,11 @@ The location link does not yet pass values to the param yaml.<br><br>
         }
 
         if (stepsToggle.checked) {
-        const selectedSteps = [...stepsContainer.querySelectorAll('input[type="checkbox"]:checked')]
-          .map(cb => cb.value);
-        if (selectedSteps.length > 0) {
-          finalParams.steps = selectedSteps;
-        }
+          const selectedSteps = [...stepsContainer.querySelectorAll('input[type="checkbox"]:checked')]
+            .map(cb => cb.value);
+          if (selectedSteps.length > 0) {
+            finalParams.steps = selectedSteps;
+          }
         }
 
         displayParams(finalParams);
@@ -292,14 +247,16 @@ The location link does not yet pass values to the param yaml.<br><br>
             status.className = 'success';
 
             fetch('/get-config')
-            .then(response => response.json())
-            .then(configData => {
-              if (configData.status === 'success' && configData.config.github?.target_repo) {
-                const targetRepo = configData.config.github.target_repo;
-                status.innerHTML = 'Notebook executed successfully!<br><a href="' + targetRepo + '" target="_blank" style="color: #155724; font-weight: bold;">View results in GitHub →</a>';
-              } else {
-                status.textContent = 'Notebook executed successfully!';
-              }
+              .then(response => response.json())
+              .then(configData => {
+                if (configData.status === 'success' && configData.config.github?.target_repo) {
+                  const targetRepo = configData.config.github.target_repo;
+                  status.innerHTML = 'Notebook executed successfully!<br><a href="' + targetRepo + '" target="_blank" style="color: #155724; font-weight: bold;">View results in GitHub →</a>';
+                } else {
+                  status.textContent = 'Notebook executed successfully!';
+                }
+
+                // ✅ REDIRECT via gonext
                 if (gonext) {
                   const redirectMsg = document.createElement('div');
                   redirectMsg.style.marginTop = '10px';
@@ -311,10 +268,10 @@ The location link does not yet pass values to the param yaml.<br><br>
                     window.location.href = gonext;
                   }, 2000);
                 }
-            })
-            .catch(() => {
-              status.textContent = 'Notebook executed successfully!';
-            });
+              })
+              .catch(() => {
+                status.textContent = 'Notebook executed successfully!';
+              });
 
           } else {
             status.className = 'error';
@@ -331,5 +288,6 @@ The location link does not yet pass values to the param yaml.<br><br>
       });
     });
   </script>
+
 </body>
 </html>
