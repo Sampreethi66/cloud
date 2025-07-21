@@ -1,7 +1,20 @@
 from flask import Blueprint, request, jsonify
 from utils.config_utils import load_config, save_config
 from utils.github_utils import get_github_token
+from utils.notebook_utils import SOURCE_REPO_URL, TARGET_REPO, NOTEBOOK_PATH, NOTEBOOK_EXECUTION_AVAILABLE
 import nbformat
+import yaml
+import os
+import sys
+import json
+import subprocess
+
+# Check if running on Google Cloud
+try:
+    from google.cloud import secretmanager
+    CLOUD_AVAILABLE = True
+except ImportError:
+    CLOUD_AVAILABLE = False
 
 core_blueprint = Blueprint('core', __name__)
 
@@ -73,11 +86,8 @@ def save_config_route():
         with open('config.yaml', 'w') as f:
             yaml.dump(config, f, default_flow_style=False)
 
-        # Update global variables
-        global SOURCE_REPO_URL, TARGET_REPO, NOTEBOOK_PATH
-        SOURCE_REPO_URL = config['github']['source_repo_url']
-        TARGET_REPO = config['github']['target_repo']
-        NOTEBOOK_PATH = config['github']['notebook_path']
+        # Configuration is saved to file, will be reloaded on next request
+        # Note: In production, you might want to implement proper config reloading
 
         return jsonify({
             'status': 'success',
@@ -120,22 +130,4 @@ def webhook():
         print(f"[ERROR] Webhook handler failed: {e}", file=sys.stderr)
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@app.route('/list-notebook-steps', methods=['GET'])
-def list_notebook_steps():
-    try:
-        notebook_path = 'notebook.ipynb'  # update if path is different
-        with open(notebook_path, 'r', encoding='utf-8') as f:
-            nb = nbformat.read(f, as_version=4)
-
-        steps = []
-        for cell in nb.cells:
-            tags = cell.get('metadata', {}).get('tags', [])
-            for tag in tags:
-                if tag.startswith('step:'):
-                    step_name = tag.split('step:')[1]
-                    if step_name not in steps:
-                        steps.append(step_name)
-
-        return jsonify({'status': 'success', 'steps': steps})
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
+# Removed duplicate route - handled in notebook_runner.py
