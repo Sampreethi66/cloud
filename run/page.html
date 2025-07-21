@@ -172,28 +172,33 @@ The location link does not yet pass values to the param yaml.<br><br>
 
    <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // Expand dot notation keys like features.dcid → { features: { dcid: ... } }
-      function expandHash(flatHash) {
-        const expanded = {};
-        for (const key in flatHash) {
-          const value = flatHash[key];
-          const parts = key.split(".");
-          let cur = expanded;
-          for (let i = 0; i < parts.length; i++) {
-            const part = parts[i];
-            if (i === parts.length - 1) {
-              cur[part] = value;
-            } else {
-              cur[part] = cur[part] || {};
-              cur = cur[part];
-            }
-          }
+      function getExpandedHash() {
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash.replaceAll('&', '&')); // ensure split
+        const flat = {};
+        for (const [key, value] of params.entries()) {
+          flat[key] = value;
         }
-        return expanded;
+
+        // Expand dot notation (e.g., features.dcid => features: { dcid: ... })
+        const expanded = {};
+        for (const key in flat) {
+          const parts = key.split('.');
+          let current = expanded;
+          parts.forEach((part, index) => {
+            if (index === parts.length - 1) {
+              current[part] = flat[key];
+            } else {
+              current[part] = current[part] || {};
+              current = current[part];
+            }
+          });
+        }
+
+        return { expanded, flat };
       }
 
-      const rawHash = getHash();
-      const hash = expandHash(rawHash);
+      const { expanded: hash, flat: rawHash } = getExpandedHash();
       const gonext = rawHash.gonext;
 
       const runButton = document.getElementById('runButton');
@@ -214,7 +219,6 @@ The location link does not yet pass values to the param yaml.<br><br>
     path: https://raw.githubusercontent.com/ModelEarth/bee-data/main/targets/bees-targets-top-20-percent.csv
   models: xgboost`;
 
-      // Override default YAML with hash values only if untouched
       try {
         const currentYaml = yamlInput.value.trim();
         const isDefault = currentYaml === defaultYaml.trim();
@@ -232,11 +236,7 @@ The location link does not yet pass values to the param yaml.<br><br>
 
           const updatedYaml = jsyaml.dump(parsedYaml);
           yamlInput.value = updatedYaml;
-
-          // Optional preview update
-          if (paramTextDiv) {
-            paramTextDiv.innerText = updatedYaml;
-          }
+          if (paramTextDiv) paramTextDiv.innerText = updatedYaml;
         }
       } catch (e) {
         console.warn('YAML parse failed on load:', e);
@@ -348,7 +348,6 @@ The location link does not yet pass values to the param yaml.<br><br>
       });
     });
   </script>
-
 
 </body>
 </html>
