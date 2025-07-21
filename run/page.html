@@ -173,13 +173,41 @@ The location link does not yet pass values to the param yaml.<br><br>
    <script>
     document.addEventListener('DOMContentLoaded', () => {
       const hash = getHash();
-      const gonext = hash.gonext; // ✅ save here to use later
+      const gonext = hash.gonext;
       const runButton = document.getElementById('runButton');
       const yamlInput = document.getElementById('yamlInput');
       const status = document.getElementById('status');
       const stepsToggle = document.getElementById('enableSteps');
       const stepsContainer = document.getElementById('stepsContainer');
       let availableSteps = [];
+
+      const defaultYaml = `folder: naics6-bees-counties
+  features:
+    data: industries
+    common: Fips
+    path: https://raw.githubusercontent.com/ModelEarth/community-timelines/main/training/naics6/US/counties/2020/US-ME-training-naics6-counties-2020.csv
+  targets:
+    data: bees
+    path: https://raw.githubusercontent.com/ModelEarth/bee-data/main/targets/bees-targets-top-20-percent.csv
+  models: xgboost`;
+
+      // Only override default YAML if it hasn't been changed by the user
+      if (yamlInput.value.trim() === defaultYaml.trim()) {
+        try {
+          const prefillYaml = jsyaml.load(defaultYaml) || {};
+          if (hash.features?.dcid) {
+            prefillYaml.features = prefillYaml.features || {};
+            prefillYaml.features.dcid = hash.features.dcid;
+          }
+          if (hash.targets?.dcid) {
+            prefillYaml.targets = prefillYaml.targets || {};
+            prefillYaml.targets.dcid = hash.targets.dcid;
+          }
+          yamlInput.value = jsyaml.dump(prefillYaml);
+        } catch (e) {
+          console.warn('Hash merge failed:', e);
+        }
+      }
 
       stepsToggle.addEventListener('change', () => {
         if (stepsToggle.checked) {
@@ -212,7 +240,8 @@ The location link does not yet pass values to the param yaml.<br><br>
         let finalParams = {};
         try {
           const rawYaml = yamlInput.value.trim();
-          finalParams = rawYaml ? jsyaml.load(rawYaml) : parseHashParams();
+          const parsed = rawYaml ? jsyaml.load(rawYaml) : {};
+          finalParams = parsed || {};
         } catch (e) {
           status.className = 'error';
           status.style.display = 'block';
@@ -256,7 +285,6 @@ The location link does not yet pass values to the param yaml.<br><br>
                   status.textContent = 'Notebook executed successfully!';
                 }
 
-                // ✅ REDIRECT via gonext
                 if (gonext) {
                   const redirectMsg = document.createElement('div');
                   redirectMsg.style.marginTop = '10px';
