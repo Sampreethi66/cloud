@@ -179,6 +179,7 @@ The location link does not yet pass values to the param yaml.<br><br>
       const status = document.getElementById('status');
       const stepsToggle = document.getElementById('enableSteps');
       const stepsContainer = document.getElementById('stepsContainer');
+      const paramTextDiv = document.getElementById('paramText');
       let availableSteps = [];
 
       const defaultYaml = `folder: naics6-bees-counties
@@ -191,22 +192,32 @@ The location link does not yet pass values to the param yaml.<br><br>
     path: https://raw.githubusercontent.com/ModelEarth/bee-data/main/targets/bees-targets-top-20-percent.csv
   models: xgboost`;
 
-      // Only override default YAML if it hasn't been changed by the user
-      if (yamlInput.value.trim() === defaultYaml.trim()) {
-        try {
-          const prefillYaml = jsyaml.load(defaultYaml) || {};
+      // Try to override YAML textarea content with URL hash params (if untouched)
+      try {
+        const currentYaml = yamlInput.value.trim();
+        const isDefault = currentYaml === defaultYaml.trim();
+        const parsedYaml = jsyaml.load(currentYaml || defaultYaml) || {};
+
+        if (isDefault && (hash.features?.dcid || hash.targets?.dcid)) {
           if (hash.features?.dcid) {
-            prefillYaml.features = prefillYaml.features || {};
-            prefillYaml.features.dcid = hash.features.dcid;
+            parsedYaml.features = parsedYaml.features || {};
+            parsedYaml.features.dcid = hash.features.dcid;
           }
           if (hash.targets?.dcid) {
-            prefillYaml.targets = prefillYaml.targets || {};
-            prefillYaml.targets.dcid = hash.targets.dcid;
+            parsedYaml.targets = parsedYaml.targets || {};
+            parsedYaml.targets.dcid = hash.targets.dcid;
           }
-          yamlInput.value = jsyaml.dump(prefillYaml);
-        } catch (e) {
-          console.warn('Hash merge failed:', e);
+
+          const updatedYaml = jsyaml.dump(parsedYaml);
+          yamlInput.value = updatedYaml;
+
+          // Optionally sync display preview
+          if (paramTextDiv) {
+            paramTextDiv.innerText = updatedYaml;
+          }
         }
+      } catch (e) {
+        console.warn('YAML parse failed on load:', e);
       }
 
       stepsToggle.addEventListener('change', () => {
@@ -240,8 +251,7 @@ The location link does not yet pass values to the param yaml.<br><br>
         let finalParams = {};
         try {
           const rawYaml = yamlInput.value.trim();
-          const parsed = rawYaml ? jsyaml.load(rawYaml) : {};
-          finalParams = parsed || {};
+          finalParams = rawYaml ? jsyaml.load(rawYaml) : {};
         } catch (e) {
           status.className = 'error';
           status.style.display = 'block';
