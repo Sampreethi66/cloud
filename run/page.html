@@ -174,13 +174,13 @@ The location link does not yet pass values to the param yaml.<br><br>
     document.addEventListener('DOMContentLoaded', () => {
       function getExpandedHash() {
         const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash.replaceAll('&', '&')); // ensure split
+        const params = new URLSearchParams(hash);
         const flat = {};
         for (const [key, value] of params.entries()) {
           flat[key] = value;
         }
 
-        // Expand dot notation (e.g., features.dcid => features: { dcid: ... })
+        // Expand dot notation: features.dcid → { features: { dcid: ... } }
         const expanded = {};
         for (const key in flat) {
           const parts = key.split('.');
@@ -201,46 +201,54 @@ The location link does not yet pass values to the param yaml.<br><br>
       const { expanded: hash, flat: rawHash } = getExpandedHash();
       const gonext = rawHash.gonext;
 
-      const runButton = document.getElementById('runButton');
       const yamlInput = document.getElementById('yamlInput');
+      const paramTextDiv = document.getElementById('paramText');
+
+      const defaultYamlObj = {
+        folder: "naics6-bees-counties",
+        features: {
+          data: "industries",
+          common: "Fips",
+          path: "https://raw.githubusercontent.com/ModelEarth/community-timelines/main/training/naics6/US/counties/2020/US-ME-training-naics6-counties-2020.csv"
+        },
+        targets: {
+          data: "bees",
+          path: "https://raw.githubusercontent.com/ModelEarth/bee-data/main/targets/bees-targets-top-20-percent.csv"
+        },
+        models: "xgboost"
+      };
+
+      // 🚨 If there are any hash params, build YAML from them
+      let finalYamlObj = { ...defaultYamlObj };
+      const hasOverrides = Object.keys(rawHash).some(k => k !== 'gonext');
+
+      if (hasOverrides) {
+        // Deep merge hash into default
+        function deepMerge(target, source) {
+          for (const key in source) {
+            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+              target[key] = target[key] || {};
+              deepMerge(target[key], source[key]);
+            } else {
+              target[key] = source[key];
+            }
+          }
+          return target;
+        }
+
+        finalYamlObj = deepMerge(finalYamlObj, hash);
+      }
+
+      const yamlText = jsyaml.dump(finalYamlObj);
+      yamlInput.value = yamlText;
+      if (paramTextDiv) paramTextDiv.innerText = yamlText;
+
+      // Then continue with rest of logic
+      const runButton = document.getElementById('runButton');
       const status = document.getElementById('status');
       const stepsToggle = document.getElementById('enableSteps');
       const stepsContainer = document.getElementById('stepsContainer');
-      const paramTextDiv = document.getElementById('paramText');
       let availableSteps = [];
-
-      const defaultYaml = `folder: naics6-bees-counties
-  features:
-    data: industries
-    common: Fips
-    path: https://raw.githubusercontent.com/ModelEarth/community-timelines/main/training/naics6/US/counties/2020/US-ME-training-naics6-counties-2020.csv
-  targets:
-    data: bees
-    path: https://raw.githubusercontent.com/ModelEarth/bee-data/main/targets/bees-targets-top-20-percent.csv
-  models: xgboost`;
-
-      try {
-        const currentYaml = yamlInput.value.trim();
-        const isDefault = currentYaml === defaultYaml.trim();
-        const parsedYaml = jsyaml.load(currentYaml || defaultYaml) || {};
-
-        if (isDefault && (hash.features?.dcid || hash.targets?.dcid)) {
-          if (hash.features?.dcid) {
-            parsedYaml.features = parsedYaml.features || {};
-            parsedYaml.features.dcid = hash.features.dcid;
-          }
-          if (hash.targets?.dcid) {
-            parsedYaml.targets = parsedYaml.targets || {};
-            parsedYaml.targets.dcid = hash.targets.dcid;
-          }
-
-          const updatedYaml = jsyaml.dump(parsedYaml);
-          yamlInput.value = updatedYaml;
-          if (paramTextDiv) paramTextDiv.innerText = updatedYaml;
-        }
-      } catch (e) {
-        console.warn('YAML parse failed on load:', e);
-      }
 
       stepsToggle.addEventListener('change', () => {
         if (stepsToggle.checked) {
@@ -348,6 +356,7 @@ The location link does not yet pass values to the param yaml.<br><br>
       });
     });
   </script>
+
 
 </body>
 </html>
