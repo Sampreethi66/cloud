@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from utils.config_utils import load_config, save_config
 from utils.github_utils import get_github_token
+import nbformat
 
 core_blueprint = Blueprint('core', __name__)
 
@@ -119,3 +120,22 @@ def webhook():
         print(f"[ERROR] Webhook handler failed: {e}", file=sys.stderr)
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/list-notebook-steps', methods=['GET'])
+def list_notebook_steps():
+    try:
+        notebook_path = 'notebook.ipynb'  # update if path is different
+        with open(notebook_path, 'r', encoding='utf-8') as f:
+            nb = nbformat.read(f, as_version=4)
+
+        steps = []
+        for cell in nb.cells:
+            tags = cell.get('metadata', {}).get('tags', [])
+            for tag in tags:
+                if tag.startswith('step:'):
+                    step_name = tag.split('step:')[1]
+                    if step_name not in steps:
+                        steps.append(step_name)
+
+        return jsonify({'status': 'success', 'steps': steps})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})

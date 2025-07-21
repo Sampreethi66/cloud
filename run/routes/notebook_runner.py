@@ -22,6 +22,9 @@ def run_notebook():
 
         notebook_path = payload.get("notebook_path", NOTEBOOK_PATH)
         parameters = payload.get("parameters", {})
+        steps = payload.get("steps", [])  # Optional, empty by default
+        if steps:
+            parameters['steps'] = steps  # Inject into notebook if provided
         print(f"[DEBUG] Received parameters: {json.dumps(parameters)}", file=sys.stderr)
         print(f"[DEBUG] Notebook path: {notebook_path}", file=sys.stderr)
 
@@ -73,3 +76,10 @@ def run_notebook():
         print(f"[ERROR] /run-notebook error: {e}", file=sys.stderr)
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@notebook_blueprint.route('/list-notebook-steps', methods=['GET'])
+def list_notebook_steps():
+    # Hardcoded list (matches tags used in the notebook)
+    return jsonify({
+        'status': 'success',
+        'steps': ['debug', 'log_summary']
+    })
