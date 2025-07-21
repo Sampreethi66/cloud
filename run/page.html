@@ -172,6 +172,14 @@ The location link does not yet pass values to the param yaml.<br><br>
 
    <script>
     document.addEventListener('DOMContentLoaded', () => {
+      const yamlInput = document.getElementById('yamlInput');
+      const paramTextDiv = document.getElementById('paramText');
+      const runButton = document.getElementById('runButton');
+      const status = document.getElementById('status');
+      const stepsToggle = document.getElementById('enableSteps');
+      const stepsContainer = document.getElementById('stepsContainer');
+      let availableSteps = [];
+
       function getExpandedHash() {
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
@@ -179,14 +187,12 @@ The location link does not yet pass values to the param yaml.<br><br>
         for (const [key, value] of params.entries()) {
           flat[key] = value;
         }
-
-        // Expand dot notation: features.dcid → { features: { dcid: ... } }
         const expanded = {};
         for (const key in flat) {
           const parts = key.split('.');
           let current = expanded;
-          parts.forEach((part, index) => {
-            if (index === parts.length - 1) {
+          parts.forEach((part, i) => {
+            if (i === parts.length - 1) {
               current[part] = flat[key];
             } else {
               current[part] = current[part] || {};
@@ -194,15 +200,11 @@ The location link does not yet pass values to the param yaml.<br><br>
             }
           });
         }
-
         return { expanded, flat };
       }
 
-      const { expanded: hash, flat: rawHash } = getExpandedHash();
+      const { expanded: hashParams, flat: rawHash } = getExpandedHash();
       const gonext = rawHash.gonext;
-
-      const yamlInput = document.getElementById('yamlInput');
-      const paramTextDiv = document.getElementById('paramText');
 
       const defaultYamlObj = {
         folder: "naics6-bees-counties",
@@ -218,38 +220,27 @@ The location link does not yet pass values to the param yaml.<br><br>
         models: "xgboost"
       };
 
-      // 🚨 If there are any hash params, build YAML from them
-      let finalYamlObj = { ...defaultYamlObj };
-      const hasOverrides = Object.keys(rawHash).some(k => k !== 'gonext');
-
-      if (hasOverrides) {
-        // Deep merge hash into default
-        function deepMerge(target, source) {
-          for (const key in source) {
-            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-              target[key] = target[key] || {};
-              deepMerge(target[key], source[key]);
-            } else {
-              target[key] = source[key];
-            }
+      function deepMerge(target, source) {
+        for (const key in source) {
+          if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
+            target[key] = target[key] || {};
+            deepMerge(target[key], source[key]);
+          } else {
+            target[key] = source[key];
           }
-          return target;
         }
-
-        finalYamlObj = deepMerge(finalYamlObj, hash);
+        return target;
       }
 
-      const yamlText = jsyaml.dump(finalYamlObj);
-      yamlInput.value = yamlText;
-      if (paramTextDiv) paramTextDiv.innerText = yamlText;
+      const hasHashOverrides = Object.keys(rawHash).some(key => key !== 'gonext');
+      const mergedYamlObj = hasHashOverrides ? deepMerge(JSON.parse(JSON.stringify(defaultYamlObj)), hashParams) : defaultYamlObj;
 
-      // Then continue with rest of logic
-      const runButton = document.getElementById('runButton');
-      const status = document.getElementById('status');
-      const stepsToggle = document.getElementById('enableSteps');
-      const stepsContainer = document.getElementById('stepsContainer');
-      let availableSteps = [];
+      // Convert YAML and prevent folded style (>-) using flowLevel: -1
+      const yamlString = jsyaml.dump(mergedYamlObj, { lineWidth: -1, flowLevel: -1 });
+      yamlInput.value = yamlString;
+      if (paramTextDiv) paramTextDiv.innerText = yamlString;
 
+      // Handle steps toggle
       stepsToggle.addEventListener('change', () => {
         if (stepsToggle.checked) {
           fetch('/list-notebook-steps')
@@ -280,8 +271,7 @@ The location link does not yet pass values to the param yaml.<br><br>
 
         let finalParams = {};
         try {
-          const rawYaml = yamlInput.value.trim();
-          finalParams = rawYaml ? jsyaml.load(rawYaml) : {};
+          finalParams = jsyaml.load(yamlInput.value.trim());
         } catch (e) {
           status.className = 'error';
           status.style.display = 'block';
@@ -292,11 +282,8 @@ The location link does not yet pass values to the param yaml.<br><br>
         }
 
         if (stepsToggle.checked) {
-          const selectedSteps = [...stepsContainer.querySelectorAll('input[type="checkbox"]:checked')]
-            .map(cb => cb.value);
-          if (selectedSteps.length > 0) {
-            finalParams.steps = selectedSteps;
-          }
+          const selectedSteps = [...stepsContainer.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+          if (selectedSteps.length > 0) finalParams.steps = selectedSteps;
         }
 
         displayParams(finalParams);
@@ -316,11 +303,10 @@ The location link does not yet pass values to the param yaml.<br><br>
             status.className = 'success';
 
             fetch('/get-config')
-              .then(response => response.json())
-              .then(configData => {
-                if (configData.status === 'success' && configData.config.github?.target_repo) {
-                  const targetRepo = configData.config.github.target_repo;
-                  status.innerHTML = 'Notebook executed successfully!<br><a href="' + targetRepo + '" target="_blank" style="color: #155724; font-weight: bold;">View results in GitHub →</a>';
+              .then(res => res.json())
+              .then(config => {
+                if (config.status === 'success' && config.config.github?.target_repo) {
+                  status.innerHTML = 'Notebook executed successfully!<br><a href="' + config.config.github.target_repo + '" target="_blank" style="color: #155724; font-weight: bold;">View results in GitHub →</a>';
                 } else {
                   status.textContent = 'Notebook executed successfully!';
                 }
@@ -331,16 +317,12 @@ The location link does not yet pass values to the param yaml.<br><br>
                   redirectMsg.style.color = '#155724';
                   redirectMsg.innerHTML = 'Redirecting...';
                   status.appendChild(redirectMsg);
-
-                  setTimeout(() => {
-                    window.location.href = gonext;
-                  }, 2000);
+                  setTimeout(() => { window.location.href = gonext; }, 2000);
                 }
               })
               .catch(() => {
                 status.textContent = 'Notebook executed successfully!';
               });
-
           } else {
             status.className = 'error';
             status.textContent = 'Error: ' + data.message;
@@ -349,13 +331,14 @@ The location link does not yet pass values to the param yaml.<br><br>
         .catch(error => {
           runButton.disabled = false;
           runButton.textContent = 'Run Notebook';
-          status.style.display = 'block';
           status.className = 'error';
+          status.style.display = 'block';
           status.textContent = 'Request failed: ' + error.message;
         });
       });
     });
   </script>
+
 
 
 </body>
