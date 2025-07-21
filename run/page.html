@@ -193,8 +193,30 @@ The location link does not yet pass values to the param yaml.<br><br>
       paramDiv.textContent = 'Parameters:\n' + JSON.stringify(obj, null, 2);
     }
     */
+    function getHash() {
+      const raw = window.location.hash.substring(1);
+      const result = {};
+      raw.split("&").forEach(pair => {
+        const [key, val] = pair.split("=");
+        if (!key) return;
+        // Parse dot notation: e.g., targets.dcid
+        const keys = key.split(".");
+        let ref = result;
+        keys.forEach((k, i) => {
+          if (i === keys.length - 1) {
+            ref[k] = decodeURIComponent(val || '');
+          } else {
+            ref[k] = ref[k] || {};
+            ref = ref[k];
+          }
+        });
+      });
+      return result;
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
+      const hash = getHash();
+      const gonext = hash.gonext;
       const runButton = document.getElementById('runButton');
       const yamlInput = document.getElementById('yamlInput');
       const status = document.getElementById('status');
@@ -277,6 +299,17 @@ The location link does not yet pass values to the param yaml.<br><br>
                 status.innerHTML = 'Notebook executed successfully!<br><a href="' + targetRepo + '" target="_blank" style="color: #155724; font-weight: bold;">View results in GitHub →</a>';
               } else {
                 status.textContent = 'Notebook executed successfully!';
+                if (gonext) {
+                  const redirectMsg = document.createElement('div');
+                  redirectMsg.style.marginTop = '10px';
+                  redirectMsg.style.color = '#155724';
+                  redirectMsg.innerHTML = 'Redirecting...';
+                  status.appendChild(redirectMsg);
+
+                  setTimeout(() => {
+                    window.location.href = gonext;
+                  }, 2000);
+                }
               }
             })
             .catch(() => {
