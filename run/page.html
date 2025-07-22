@@ -113,7 +113,7 @@ models: xgboost
 <label for="yamlUrlInput"><strong>Load YAML from URL</strong> (e.g. <code>parameters.yaml</code>):</label><br>
 <input type="url" id="yamlUrlInput" placeholder="Paste URL to parameters.yaml (optional)" style="width:100%; padding:10px; margin-top:8px; font-size:14px;">
 <br><br>
-
+<button id="loadYamlButton" style="margin-top:10px;">Load YAML</button>
 OR
 
 <textarea id="yamlInput" placeholder="">folder: naics6-bees-counties
@@ -186,7 +186,9 @@ The location link does not yet pass values to the param yaml.<br><br>
       const stepsContainer = document.getElementById('stepsContainer');
       let availableSteps = [];
 
-      urlInput.addEventListener('change', () => {
+      urlInput.addEventListener('change', loadYamlFromUrl);
+
+      function loadYamlFromUrl() {
       const url = urlInput.value.trim();
       if (!url) return;
       fetch(url)
@@ -207,7 +209,18 @@ The location link does not yet pass values to the param yaml.<br><br>
         .catch(err => {
           alert('Error loading YAML: ' + err.message);
         });
-        });
+      }
+
+      document.getElementById('loadYamlButton').addEventListener('click', () => {
+      const button = document.getElementById('loadYamlButton');
+      button.disabled = true;
+      button.textContent = 'Loading...';
+
+      loadYamlFromUrl().finally(() => {
+        button.disabled = false;
+        button.textContent = 'Load YAML';
+      });
+      });
 
 
       function getExpandedHash() {
