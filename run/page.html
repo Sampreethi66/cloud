@@ -110,6 +110,11 @@ targets:
   path: https://example.com/bees.csv
 models: xgboost
 -->
+<label for="yamlUrlInput"><strong>Load YAML from URL</strong> (e.g. <code>parameters.yaml</code>):</label><br>
+<input type="url" id="yamlUrlInput" placeholder="Paste URL to parameters.yaml (optional)" style="width:100%; padding:10px; margin-top:8px; font-size:14px;">
+<br><br>
+
+OR
 
 <textarea id="yamlInput" placeholder="">folder: naics6-bees-counties
 features:
@@ -173,16 +178,7 @@ The location link does not yet pass values to the param yaml.<br><br>
    <script>
     document.addEventListener('DOMContentLoaded', () => {
       const yamlInput = document.getElementById('yamlInput');
-      // ✅ Inject YAML URL loader input
-      const urlInput = document.createElement('input');
-      urlInput.type = 'url';
-      urlInput.placeholder = 'Paste URL to parameters.yaml (optional)';
-      urlInput.style.width = '100%';
-      urlInput.style.marginTop = '15px';
-      urlInput.style.padding = '10px';
-      urlInput.style.fontSize = '14px';
-      yamlInput.parentNode.insertBefore(urlInput, yamlInput);
-
+      const urlInput = document.getElementById('yamlUrlInput');
       const paramTextDiv = document.getElementById('paramText');
       const runButton = document.getElementById('runButton');
       const status = document.getElementById('status');
