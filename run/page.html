@@ -173,12 +173,46 @@ The location link does not yet pass values to the param yaml.<br><br>
    <script>
     document.addEventListener('DOMContentLoaded', () => {
       const yamlInput = document.getElementById('yamlInput');
+      // ✅ Inject YAML URL loader input
+      const urlInput = document.createElement('input');
+      urlInput.type = 'url';
+      urlInput.placeholder = 'Paste URL to parameters.yaml (optional)';
+      urlInput.style.width = '100%';
+      urlInput.style.marginTop = '15px';
+      urlInput.style.padding = '10px';
+      urlInput.style.fontSize = '14px';
+      yamlInput.parentNode.insertBefore(urlInput, yamlInput);
+
       const paramTextDiv = document.getElementById('paramText');
       const runButton = document.getElementById('runButton');
       const status = document.getElementById('status');
       const stepsToggle = document.getElementById('enableSteps');
       const stepsContainer = document.getElementById('stepsContainer');
       let availableSteps = [];
+
+      urlInput.addEventListener('change', () => {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error('Could not fetch YAML: ' + res.statusText);
+          return res.text();
+        })
+        .then(text => {
+          try {
+            const parsed = jsyaml.load(text);
+            const dumped = jsyaml.dump(parsed, { lineWidth: -1, flowLevel: -1 });
+            yamlInput.value = dumped;
+            if (paramTextDiv) paramTextDiv.innerText = dumped;
+          } catch (err) {
+            alert('YAML parsing failed: ' + err.message);
+          }
+        })
+        .catch(err => {
+          alert('Error loading YAML: ' + err.message);
+        });
+        });
+
 
       function getExpandedHash() {
         const hash = window.location.hash.substring(1);
@@ -338,8 +372,6 @@ The location link does not yet pass values to the param yaml.<br><br>
       });
     });
   </script>
-
-
 
 </body>
 </html>
