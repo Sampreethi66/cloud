@@ -114,7 +114,8 @@ models: xgboost
 <input type="url" id="yamlUrlInput" placeholder="Paste URL to parameters.yaml (optional)" style="width:100%; padding:10px; margin-top:8px; font-size:14px;">
 <br><br>
 <button id="loadYamlButton" style="margin-top:10px;">Load YAML</button>
-OR
+
+<div style="margin: 10px 0;">or paste YAML below:</div>
 
 <textarea id="yamlInput" placeholder="">folder: naics6-bees-counties
 features:
@@ -211,17 +212,7 @@ The location link does not yet pass values to the param yaml.<br><br>
         });
       }
 
-      document.getElementById('loadYamlButton').addEventListener('click', () => {
-      const button = document.getElementById('loadYamlButton');
-      button.disabled = true;
-      button.textContent = 'Loading...';
-
-      loadYamlFromUrl().finally(() => {
-        button.disabled = false;
-        button.textContent = 'Load YAML';
-      });
-      });
-
+      document.getElementById('loadYamlButton').addEventListener('click', loadYamlFromUrl);
 
       function getExpandedHash() {
         const hash = window.location.hash.substring(1);
