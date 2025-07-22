@@ -6,7 +6,8 @@
   <!-- provides getHash() -->
   <link type="text/css" rel="stylesheet" href="https://model.earth/localsite/css/base.css" id="/localsite/css/base.css">
   <script type="text/javascript" src="https://model.earth/localsite/js/localsite.js?showheader=true&showsearch=true"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script src="js/param-input.js"></script>
   <style>
     bodyXX {
       font-family: Arial, sans-serif;
@@ -82,6 +83,17 @@
       text-align: center;
       margin-top: 20px;
     }
+    #stepsContainer {
+    display: none;
+    margin-top: 20px;
+    padding: 10px;
+    background: #f1f1f1;
+    border-radius: 5px;
+    }
+    #stepsContainer label {
+    display: block;
+    margin: 4px 0;
+    }
   </style>
 </head>
 <body>
@@ -98,9 +110,14 @@ targets:
   path: https://example.com/bees.csv
 models: xgboost
 -->
+<label for="yamlUrlInput"><strong>Load YAML from URL</strong> (e.g. <code>parameters.yaml</code>):</label><br>
+<input type="url" id="yamlUrlInput" placeholder="Paste URL to parameters.yaml (optional)" style="width:100%; padding:10px; margin-top:8px; font-size:14px;">
+<br><br>
+<button id="loadYamlButton" style="margin-top:10px;">Load YAML</button>
 
-<textarea id="yamlInput" placeholder="">folder: example-folder
-folder: naics6-bees-counties
+<div style="margin: 10px 0;">or paste YAML below:</div>
+
+<textarea id="yamlInput" placeholder="">folder: naics6-bees-counties
 features:
   data: industries
   common: Fips
@@ -116,11 +133,11 @@ Comparison of textarea input above with div + pre below.<br>
 The location link does not yet pass values to the param yaml.<br><br>
 
 <div>
-  Choose: 
-  <a href=#geoview=country>location</a> | 
+  Choose:
+  <a href=#geoview=country>location</a> |
   <a href="#" onclick="goToPage('https://model.earth/realitystream/models'); return false;">models</a>
   <div class="local" style="display:none">
-    | <a href="#" onclick="goToPage('https://model.earth/localsite/info'); return false;">features</a> | 
+    | <a href="#" onclick="goToPage('https://model.earth/localsite/info'); return false;">features</a> |
     <a href="#" onclick="goToPage('https://model.earth/data-commons/docs/data'); return false;">targets</a>
   </div>
 </div>
@@ -140,6 +157,13 @@ The location link does not yet pass values to the param yaml.<br><br>
 <b>models:</b> xgboost
 </pre></div>
 
+<br><br>
+    <label>
+      <input type="checkbox" id="enableSteps">
+      Select steps to run
+    </label>
+    <div id="stepsContainer"></div>
+
     <div class="button-container">
       <button id="runButton">Run Notebook</button>
       <a href="/config" class="config-link">Flask Server Config</a>
@@ -152,34 +176,127 @@ The location link does not yet pass values to the param yaml.<br><br>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
    <script src="js/param-input.js"></script>
 
-  <script>
-    // Resides in js/param-input.js which is shared within realitystream/index.html
-    /*
-    function parseHashParams() {
-      const hash = window.location.hash.substring(1);
-      const params = {};
-      hash.split('&').forEach(pair => {
-        const [key, value] = pair.split('=');
-        if (key) params[key] = decodeURIComponent(value || '');
-      });
-      return params;
-    }
-
-    function displayParams(obj) {
-      const paramDiv = document.getElementById('params');
-      if (!obj || Object.keys(obj).length === 0) {
-        paramDiv.style.display = 'none';
-        return;
-      }
-      paramDiv.style.display = 'block';
-      paramDiv.textContent = 'Parameters:\n' + JSON.stringify(obj, null, 2);
-    }
-    */
-
+   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const runButton = document.getElementById('runButton');
       const yamlInput = document.getElementById('yamlInput');
+      const urlInput = document.getElementById('yamlUrlInput');
+      const paramTextDiv = document.getElementById('paramText');
+      const runButton = document.getElementById('runButton');
       const status = document.getElementById('status');
+      const stepsToggle = document.getElementById('enableSteps');
+      const stepsContainer = document.getElementById('stepsContainer');
+      let availableSteps = [];
+
+      urlInput.addEventListener('change', loadYamlFromUrl);
+
+      function loadYamlFromUrl() {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error('Could not fetch YAML: ' + res.statusText);
+          return res.text();
+        })
+        .then(text => {
+          try {
+            const parsed = jsyaml.load(text);
+            const dumped = jsyaml.dump(parsed, { lineWidth: -1, flowLevel: -1 });
+            yamlInput.value = dumped;
+            if (paramTextDiv) paramTextDiv.innerText = dumped;
+          } catch (err) {
+            alert('YAML parsing failed: ' + err.message);
+          }
+        })
+        .catch(err => {
+          alert('Error loading YAML: ' + err.message);
+        });
+      }
+
+      document.getElementById('loadYamlButton').addEventListener('click', loadYamlFromUrl);
+
+      function getExpandedHash() {
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const flat = {};
+        for (const [key, value] of params.entries()) {
+          flat[key] = value;
+        }
+        const expanded = {};
+        for (const key in flat) {
+          const parts = key.split('.');
+          let current = expanded;
+          parts.forEach((part, i) => {
+            if (i === parts.length - 1) {
+              current[part] = flat[key];
+            } else {
+              current[part] = current[part] || {};
+              current = current[part];
+            }
+          });
+        }
+        return { expanded, flat };
+      }
+
+      const { expanded: hashParams, flat: rawHash } = getExpandedHash();
+      const gonext = rawHash.gonext;
+
+      const defaultYamlObj = {
+        folder: "naics6-bees-counties",
+        features: {
+          data: "industries",
+          common: "Fips",
+          path: "https://raw.githubusercontent.com/ModelEarth/community-timelines/main/training/naics6/US/counties/2020/US-ME-training-naics6-counties-2020.csv"
+        },
+        targets: {
+          data: "bees",
+          path: "https://raw.githubusercontent.com/ModelEarth/bee-data/main/targets/bees-targets-top-20-percent.csv"
+        },
+        models: "xgboost"
+      };
+
+      function deepMerge(target, source) {
+        for (const key in source) {
+          if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
+            target[key] = target[key] || {};
+            deepMerge(target[key], source[key]);
+          } else {
+            target[key] = source[key];
+          }
+        }
+        return target;
+      }
+
+      const hasHashOverrides = Object.keys(rawHash).some(key => key !== 'gonext');
+      const mergedYamlObj = hasHashOverrides ? deepMerge(JSON.parse(JSON.stringify(defaultYamlObj)), hashParams) : defaultYamlObj;
+
+      // Convert YAML and prevent folded style (>-) using flowLevel: -1
+      const yamlString = jsyaml.dump(mergedYamlObj, { lineWidth: -1, flowLevel: -1 });
+      yamlInput.value = yamlString;
+      if (paramTextDiv) paramTextDiv.innerText = yamlString;
+
+      // Handle steps toggle
+      stepsToggle.addEventListener('change', () => {
+        if (stepsToggle.checked) {
+          fetch('/list-notebook-steps')
+            .then(res => res.json())
+            .then(data => {
+              availableSteps = data.steps || [];
+              stepsContainer.innerHTML = '';
+              availableSteps.forEach(step => {
+                const label = document.createElement('label');
+                label.innerHTML = `<input type="checkbox" value="${step}"> ${step}`;
+                stepsContainer.appendChild(label);
+              });
+              stepsContainer.style.display = 'block';
+            })
+            .catch(() => {
+              stepsContainer.innerHTML = '<p style="color:red;">Failed to load steps</p>';
+            });
+        } else {
+          stepsContainer.style.display = 'none';
+          stepsContainer.innerHTML = '';
+        }
+      });
 
       runButton.addEventListener('click', () => {
         status.style.display = 'none';
@@ -187,10 +304,8 @@ The location link does not yet pass values to the param yaml.<br><br>
         runButton.textContent = 'Processing...';
 
         let finalParams = {};
-
         try {
-          const rawYaml = yamlInput.value.trim();
-          finalParams = rawYaml ? jsyaml.load(rawYaml) : parseHashParams();
+          finalParams = jsyaml.load(yamlInput.value.trim());
         } catch (e) {
           status.className = 'error';
           status.style.display = 'block';
@@ -198,6 +313,11 @@ The location link does not yet pass values to the param yaml.<br><br>
           runButton.disabled = false;
           runButton.textContent = 'Run Notebook';
           return;
+        }
+
+        if (stepsToggle.checked) {
+          const selectedSteps = [...stepsContainer.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+          if (selectedSteps.length > 0) finalParams.steps = selectedSteps;
         }
 
         displayParams(finalParams);
@@ -217,19 +337,26 @@ The location link does not yet pass values to the param yaml.<br><br>
             status.className = 'success';
 
             fetch('/get-config')
-            .then(response => response.json())
-            .then(configData => {
-              if (configData.status === 'success' && configData.config.github?.target_repo) {
-                const targetRepo = configData.config.github.target_repo;
-                status.innerHTML = 'Notebook executed successfully!<br><a href="' + targetRepo + '" target="_blank" style="color: #155724; font-weight: bold;">View results in GitHub →</a>';
-              } else {
-                status.textContent = 'Notebook executed successfully!';
-              }
-            })
-            .catch(() => {
-              status.textContent = 'Notebook executed successfully!';
-            });
+              .then(res => res.json())
+              .then(config => {
+                if (config.status === 'success' && config.config.github?.target_repo) {
+                  status.innerHTML = 'Notebook executed successfully!<br><a href="' + config.config.github.target_repo + '" target="_blank" style="color: #155724; font-weight: bold;">View results in GitHub →</a>';
+                } else {
+                  status.textContent = 'Notebook executed successfully!';
+                }
 
+                if (gonext) {
+                  const redirectMsg = document.createElement('div');
+                  redirectMsg.style.marginTop = '10px';
+                  redirectMsg.style.color = '#155724';
+                  redirectMsg.innerHTML = 'Redirecting...';
+                  status.appendChild(redirectMsg);
+                  setTimeout(() => { window.location.href = gonext; }, 2000);
+                }
+              })
+              .catch(() => {
+                status.textContent = 'Notebook executed successfully!';
+              });
           } else {
             status.className = 'error';
             status.textContent = 'Error: ' + data.message;
@@ -238,12 +365,13 @@ The location link does not yet pass values to the param yaml.<br><br>
         .catch(error => {
           runButton.disabled = false;
           runButton.textContent = 'Run Notebook';
-          status.style.display = 'block';
           status.className = 'error';
+          status.style.display = 'block';
           status.textContent = 'Request failed: ' + error.message;
         });
       });
     });
   </script>
+
 </body>
 </html>
