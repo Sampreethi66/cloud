@@ -1,4 +1,4 @@
-# I use this file only when locally building+running docker.
+# I use this file only when locally building+running docker. NOT USED IN PROD
 # 🔐 Secrets
 .env
 .env.bak
