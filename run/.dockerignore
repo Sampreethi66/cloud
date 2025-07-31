@@ -1,0 +1,50 @@
+# I use this file only when locally building+running docker.
+# 🔐 Secrets
+.env
+.env.bak
+service-account-key.json
+
+# 🐍 Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 📦 Python packaging/build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# 🧪 Local virtual environments
+env/
+venv/
+.venv/
+ENV/
+
+# 💻 IDE/editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 🖥️ OS files
+.DS_Store
+Thumbs.db
+
+# 🐙 Git
+.git/
+.gitignore
+
+# 🧾 Logs and backups
+*.log
+*.bak
+
+# 📝 Local docs
+README.md
+CLAUDE.md
+test-in-a-colab.md
+
+# 📦 Cloud SDK-specific
+.gcloud/
+.gcloudignore
