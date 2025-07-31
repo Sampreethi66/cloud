@@ -7,8 +7,8 @@ def load_config():
     except FileNotFoundError:
         return {
             'github': {
-                'source_repo_url': 'https://github.com/modelearth/cloud.git',
-                'target_repo': 'https://github.com/modelearth/reports.git',
+                'source_repo_url': 'https://github.com/AbhinavSivanandhan/cloud.git',
+                'target_repo': 'https://github.com/AbhinavSivanandhan/reports.git',
                 'notebook_path': 'run/notebook.ipynb'
             }
         }
