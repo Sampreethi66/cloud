@@ -13,11 +13,12 @@ from utils.notebook_utils import (
     execute_notebook_simulation,
     NOTEBOOK_EXECUTION_AVAILABLE
 )
-
+from utils.auth_utils import require_token
 
 notebook_blueprint = Blueprint('notebook', __name__)
 
 @notebook_blueprint.route('/run-notebook', methods=['POST'])
+@require_token
 def run_notebook():
     try:
         print(f"[INFO] /run-notebook triggered", file=sys.stderr)
@@ -80,6 +81,7 @@ def run_notebook():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @notebook_blueprint.route('/list-notebook-steps', methods=['GET'])
+@require_token
 def list_notebook_steps():
     import traceback
     try:

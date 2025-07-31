@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask, send_from_directory
 from routes.core_routes import core_blueprint
 from routes.notebook_runner import notebook_blueprint

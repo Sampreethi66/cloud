@@ -2,7 +2,22 @@
 <html>
 <head>
   <title>Run Models</title>
+  <script>
+    let UI_ACCESS_TOKEN = localStorage.getItem("UI_ACCESS_TOKEN");
+    if (!UI_ACCESS_TOKEN) {
+      UI_ACCESS_TOKEN = prompt("🔐 Enter access token:");
+      if (UI_ACCESS_TOKEN) {
+        localStorage.setItem("UI_ACCESS_TOKEN", UI_ACCESS_TOKEN);
+      }
+    }
 
+    const originalFetch = window.fetch;
+    window.fetch = function (url, options = {}) {
+      options.headers = options.headers || {};
+      options.headers['X-Access-Token'] = UI_ACCESS_TOKEN;
+      return originalFetch(url, options);
+    };
+  </script>
   <!-- provides getHash() -->
   <link type="text/css" rel="stylesheet" href="https://model.earth/localsite/css/base.css" id="/localsite/css/base.css">
   <script type="text/javascript" src="https://model.earth/localsite/js/localsite.js?showheader=true&showsearch=true"></script>
@@ -171,6 +186,8 @@ The location link does not yet pass values to the param yaml.<br><br>
 
     <div id="status" style="display: none;"></div>
     <div id="params" style="display: none;"></div>
+    <button onclick="logout()">Logout</button>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
@@ -253,6 +270,10 @@ The location link does not yet pass values to the param yaml.<br><br>
         },
         models: "xgboost"
       };
+      function logout() {
+        localStorage.removeItem("UI_ACCESS_TOKEN");
+        location.reload();
+      }
 
       function deepMerge(target, source) {
         for (const key in source) {
@@ -371,6 +392,7 @@ The location link does not yet pass values to the param yaml.<br><br>
         });
       });
     });
+
   </script>
 
 </body>
