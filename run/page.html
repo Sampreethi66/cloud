@@ -417,6 +417,10 @@ The location link does not yet pass values to the param yaml.<br><br>
             fetch('/get-config')
               .then(res => res.json())
               .then(config => {
+                console.log("🪵 /get-config response:", config);
+                console.log("🔍 config.status:", config.status);
+                console.log("🔍 config.config.github:", config.config.github);
+                console.log("🔍 config.config.github?.target_repo:", config.config.github?.target_repo);
                 if (config.status === 'success' && config.config.github?.target_repo) {
                   status.innerHTML = 'Notebook executed successfully!<br><a href="' + config.config.github.target_repo + '" target="_blank" style="color: #155724; font-weight: bold;">View results in GitHub →</a>';
                 } else {
