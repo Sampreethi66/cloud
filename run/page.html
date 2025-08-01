@@ -309,6 +309,7 @@ The location link does not yet pass values to the param yaml.<br><br>
         return target;
       }
       console.log("HASH IMMEDIATELY:", window.location.hash);
+      let gonext = null;
       function parseAndRenderFromHash() {
       const { expanded: hashParams, flat: rawHash } = getExpandedHash();
       const gonext = rawHash.gonext;
@@ -422,7 +423,6 @@ The location link does not yet pass values to the param yaml.<br><br>
                 console.log("🔍 config.config.github:", config.config.github);
                 console.log("🔍 config.config.github?.target_repo:", config.config.github?.target_repo);
                 if (config.status === 'success' && config.config.github?.target_repo) {
-                  status.style.display = 'block';
                   status.innerHTML = 'Notebook executed successfully!<br><a href="' + config.config.github.target_repo + '" target="_blank" style="color: #155724; font-weight: bold;">View results in GitHub →</a>';
                 } else {
                   status.textContent = 'Notebook executed successfully!';
