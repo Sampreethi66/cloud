@@ -69,3 +69,45 @@ gcloud run deploy "$SERVICE_NAME" \
 
 echo "✅ Token rotated and redeployed!"
 echo "🔑 New UI_ACCESS_TOKEN: $UI_ACCESS_TOKEN"
+
+# --- Step 9: Post-Rotation Notification ---
+
+echo "🔑 New UI_ACCESS_TOKEN: $UI_ACCESS_TOKEN"
+
+# Copy to clipboard (macOS, Linux, Windows)
+if command -v pbcopy &> /dev/null; then
+  echo "$UI_ACCESS_TOKEN" | pbcopy
+  echo "📋 Token copied to clipboard (macOS)"
+elif command -v xclip &> /dev/null; then
+  echo "$UI_ACCESS_TOKEN" | xclip -selection clipboard
+  echo "📋 Token copied to clipboard (Linux)"
+elif command -v clip &> /dev/null; then
+  echo "$UI_ACCESS_TOKEN" | clip
+  echo "📋 Token copied to clipboard (Windows)"
+else
+  echo "⚠️ Clipboard not supported on this system. Copy it from .env file."
+fi
+
+
+# Load COLLABORATOR_EMAILS from .env
+COLLABORATORS=$(grep "^COLLABORATOR_EMAILS=" "$ENV_FILE" | cut -d '=' -f2- | tr -d '\"')
+if [[ -z "$COLLABORATORS" ]]; then
+  echo "⚠️ No COLLABORATOR_EMAILS found in .env"
+else
+  echo "👥 Notifying collaborators: $COLLABORATORS"
+
+  # Prepare mailto link (use URL encoding)
+  SUBJECT="New UI Access Token Rotated"
+  BODY="A new UI_ACCESS_TOKEN was generated and deployed to production.%0A%0AToken:%0A$UI_ACCESS_TOKEN%0A%0A--%0ANotebook Executor Deployment Script"
+
+  MAILTO_URL="mailto:$COLLABORATORS?subject=$(echo "$SUBJECT" | sed 's/ /%20/g')&body=$BODY"
+
+  echo "📧 To notify collaborators, open this link:"
+  echo "$MAILTO_URL"
+
+  # Prompt user to open in browser
+  read -p "🌐 Open default email client with prefilled draft? [y/N]: " OPEN_EMAIL
+  if [[ "$OPEN_EMAIL" =~ ^[Yy]$ ]]; then
+    open "$MAILTO_URL" 2>/dev/null || xdg-open "$MAILTO_URL" 2>/dev/null || echo "❌ Could not open browser"
+  fi
+fi
