@@ -129,28 +129,29 @@
     margin: 4px 0;
     }
     #logoutButton {
-      position: fixed;
-      top: 16px;
-      right: 16px;
+      float: right;
+      margin-top: -42px; /* Aligns with the h1 */
       background-color: #f44336;
       color: white;
       border: none;
-      padding: 10px 16px;
+      padding: 8px 14px;
       border-radius: 4px;
       cursor: pointer;
       font-size: 14px;
-      z-index: 1000;
     }
     #logoutButton:hover {
       background-color: #d32f2f;
     }
 
+
   </style>
 </head>
 <body>
   <div class="content contentpadding">
-    <button id="logoutButton" onclick="logout()">Logout</button>
-    <h1>Run Models</h1>
+    <h1 style="position: relative;">
+      Run Models
+      <button id="logoutButton" onclick="logout()">Logout</button>
+    </h1>
     <p>Paste optional <strong>YAML parameters</strong> below (or leave empty to use URL hash)</p>
 
 <!--
