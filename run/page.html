@@ -7,6 +7,17 @@
     window._rawHashAtStart = window.location.hash;
   </script>
   <script>
+    const observer = new MutationObserver(() => {
+      console.log("💥 Mutation detected. Hash is now:", window.location.hash);
+    });
+
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+
+    window.addEventListener("hashchange", () => {
+      console.log("🔁 hashchange:", window.location.hash);
+    });
+  </script>
+  <script>
     let UI_ACCESS_TOKEN = null;
 
     const originalFetch = window.fetch;
@@ -298,20 +309,47 @@ The location link does not yet pass values to the param yaml.<br><br>
         return target;
       }
       console.log("HASH IMMEDIATELY:", window.location.hash);
-      requestAnimationFrame(() => {
-        console.log("HASH AFTER FRAME:", window.location.hash);
-        const { expanded: hashParams, flat: rawHash } = getExpandedHash();
-        const gonext = rawHash.gonext;
+      function parseAndRenderFromHash() {
+      const { expanded: hashParams, flat: rawHash } = getExpandedHash();
+      const gonext = rawHash.gonext;
 
-        const hasHashOverrides = Object.keys(rawHash).some(key => key !== 'gonext');
-        const mergedYamlObj = hasHashOverrides
-          ? deepMerge(JSON.parse(JSON.stringify(defaultYamlObj)), hashParams)
-          : defaultYamlObj;
+      const hasHashOverrides = Object.keys(rawHash).some(key => key !== 'gonext');
+      const mergedYamlObj = hasHashOverrides
+        ? deepMerge(JSON.parse(JSON.stringify(defaultYamlObj)), hashParams)
+        : defaultYamlObj;
 
-        const yamlString = jsyaml.dump(mergedYamlObj, { lineWidth: -1, flowLevel: -1 });
-        yamlInput.value = yamlString;
-        if (paramTextDiv) paramTextDiv.innerText = yamlString;
-      });
+      const yamlString = jsyaml.dump(mergedYamlObj, { lineWidth: -1, flowLevel: -1 });
+      yamlInput.value = yamlString;
+      if (paramTextDiv) paramTextDiv.innerText = yamlString;
+    }
+
+    function waitUntilHashSettlesAndParse() {
+      let attempt = 0;
+      const maxAttempts = 10;
+
+      function tryParse() {
+        attempt++;
+        const hash = window.location.hash;
+        const broken = hash.includes("[object Object]");
+
+        console.log(`🕒 attempt ${attempt}, hash:`, hash);
+
+        if (!broken || attempt >= maxAttempts) {
+          parseAndRenderFromHash();
+        } else {
+          setTimeout(tryParse, 50); // wait and try again
+        }
+      }
+
+      tryParse();
+    }
+
+    // Run once after initial load delay
+    setTimeout(waitUntilHashSettlesAndParse, 150);
+
+    // Re-run on hash changes (e.g., user interaction)
+    window.addEventListener("hashchange", waitUntilHashSettlesAndParse);
+
 
 
       // Handle steps toggle
