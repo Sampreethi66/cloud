@@ -142,8 +142,13 @@
     #logoutButton:hover {
       background-color: #d32f2f;
     }
-
-
+    #stepsLoading {
+      display: none;
+      font-size: 14px;
+      margin-top: 8px;
+      color: #555;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -216,7 +221,7 @@ The location link does not yet pass values to the param yaml.<br><br>
       Select steps to run
     </label>
     <div id="stepsContainer"></div>
-
+    <div id="stepsLoading">Loading available steps…</div>
     <div class="button-container">
       <button id="runButton">Run Notebook</button>
       <a href="/config" class="config-link">Flask Server Config</a>
@@ -373,6 +378,7 @@ The location link does not yet pass values to the param yaml.<br><br>
       // Handle steps toggle
       stepsToggle.addEventListener('change', () => {
         if (stepsToggle.checked) {
+          document.getElementById('stepsLoading').style.display = 'block';
           fetch('/list-notebook-steps')
             .then(res => res.json())
             .then(data => {
@@ -387,12 +393,19 @@ The location link does not yet pass values to the param yaml.<br><br>
             })
             .catch(() => {
               stepsContainer.innerHTML = '<p style="color:red;">Failed to load steps</p>';
+              stepsContainer.style.display = 'block';
+            })
+            .finally(() => {
+              document.getElementById('stepsLoading').style.display = 'none';
             });
         } else {
           stepsContainer.style.display = 'none';
           stepsContainer.innerHTML = '';
+          document.getElementById('stepsLoading').style.display = 'none';
         }
       });
+
+
 
       runButton.addEventListener('click', () => {
         status.style.display = 'none';
