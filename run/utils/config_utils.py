@@ -12,8 +12,8 @@ def load_config():
         print(f"[WARN] Config not found at {config_path}, using defaults.")
         return {
             'github': {
-                'source_repo_url': 'https://github.com/AbhinavSivanandhan/cloud.git',
-                'target_repo': 'https://github.com/AbhinavSivanandhan/reports.git',
+                'source_repo_url': 'https://github.com/modelearth/cloud.git',
+                'target_repo': 'https://github.com/modelearth/reports.git',
                 'notebook_path': 'run/notebook.ipynb'
             }
         }
