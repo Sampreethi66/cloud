@@ -238,7 +238,7 @@ The location link does not yet pass values to the param yaml.<br><br>
     document.addEventListener('DOMContentLoaded', () => {
       UI_ACCESS_TOKEN = localStorage.getItem("UI_ACCESS_TOKEN");
       if (!UI_ACCESS_TOKEN) {
-        UI_ACCESS_TOKEN = prompt("🔐 Welcome! Enter access token here:");
+        UI_ACCESS_TOKEN = prompt("🔐 Welcome! Enter access token here to login:");
         if (UI_ACCESS_TOKEN) {
           localStorage.setItem("UI_ACCESS_TOKEN", UI_ACCESS_TOKEN);
         } else {
