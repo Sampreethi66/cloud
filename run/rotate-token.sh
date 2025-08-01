@@ -98,7 +98,7 @@ else
 
   # Prepare mailto link (use URL encoding)
   SUBJECT="New UI Access Token Rotated"
-  BODY="A new UI_ACCESS_TOKEN was generated and deployed to production.%0A%0AToken:%0A$UI_ACCESS_TOKEN%0A%0A--%0ANotebook Executor Deployment Script"
+  BODY="A new UI_ACCESS_TOKEN was generated and deployed to production.%0A%0AToken:%0A$UI_ACCESS_TOKEN%0A%0A--%0ADeploy-Assistant"
 
   MAILTO_URL="mailto:$COLLABORATORS?subject=$(echo "$SUBJECT" | sed 's/ /%20/g')&body=$BODY"
 

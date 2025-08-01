@@ -3,19 +3,23 @@
 <head>
   <title>Run Models</title>
   <script>
-    let UI_ACCESS_TOKEN = localStorage.getItem("UI_ACCESS_TOKEN");
-    if (!UI_ACCESS_TOKEN) {
-      UI_ACCESS_TOKEN = prompt("🔐 Enter access token:");
-      if (UI_ACCESS_TOKEN) {
-        localStorage.setItem("UI_ACCESS_TOKEN", UI_ACCESS_TOKEN);
-      }
-    }
+    let UI_ACCESS_TOKEN = null;
 
     const originalFetch = window.fetch;
-    window.fetch = function (url, options = {}) {
+    window.fetch = async function (url, options = {}) {
       options.headers = options.headers || {};
-      options.headers['X-Access-Token'] = UI_ACCESS_TOKEN;
-      return originalFetch(url, options);
+      options.headers['X-Access-Token'] = localStorage.getItem("UI_ACCESS_TOKEN");
+
+      const response = await originalFetch(url, options);
+
+      if (response.status === 401 || response.status === 403) {
+        alert("❌ Invalid or expired access token. Please re-enter.");
+        localStorage.removeItem("UI_ACCESS_TOKEN");
+        location.reload();
+        return Promise.reject(new Error("Unauthorized"));
+      }
+
+      return response;
     };
   </script>
   <!-- provides getHash() -->
@@ -195,6 +199,15 @@ The location link does not yet pass values to the param yaml.<br><br>
 
    <script>
     document.addEventListener('DOMContentLoaded', () => {
+      UI_ACCESS_TOKEN = localStorage.getItem("UI_ACCESS_TOKEN");
+      if (!UI_ACCESS_TOKEN) {
+        UI_ACCESS_TOKEN = prompt("🔐 Welcome! Enter access token here:");
+        if (UI_ACCESS_TOKEN) {
+          localStorage.setItem("UI_ACCESS_TOKEN", UI_ACCESS_TOKEN);
+        } else {
+          alert("Token is required to proceed.");
+        }
+      }
       const yamlInput = document.getElementById('yamlInput');
       const urlInput = document.getElementById('yamlUrlInput');
       const paramTextDiv = document.getElementById('paramText');
@@ -270,10 +283,6 @@ The location link does not yet pass values to the param yaml.<br><br>
         },
         models: "xgboost"
       };
-      function logout() {
-        localStorage.removeItem("UI_ACCESS_TOKEN");
-        location.reload();
-      }
 
       function deepMerge(target, source) {
         for (const key in source) {
@@ -393,6 +402,10 @@ The location link does not yet pass values to the param yaml.<br><br>
       });
     });
 
+    window.logout = function () {
+      localStorage.removeItem("UI_ACCESS_TOKEN");
+      location.reload();
+    };
   </script>
 
 </body>
