@@ -267,9 +267,6 @@ The location link does not yet pass values to the param yaml.<br><br>
         return { expanded, flat };
       }
 
-      const { expanded: hashParams, flat: rawHash } = getExpandedHash();
-      const gonext = rawHash.gonext;
-
       const defaultYamlObj = {
         folder: "naics6-bees-counties",
         features: {
@@ -295,14 +292,22 @@ The location link does not yet pass values to the param yaml.<br><br>
         }
         return target;
       }
+      console.log("HASH IMMEDIATELY:", window.location.hash);
+      requestAnimationFrame(() => {
+        console.log("HASH AFTER FRAME:", window.location.hash);
+        const { expanded: hashParams, flat: rawHash } = getExpandedHash();
+        const gonext = rawHash.gonext;
 
-      const hasHashOverrides = Object.keys(rawHash).some(key => key !== 'gonext');
-      const mergedYamlObj = hasHashOverrides ? deepMerge(JSON.parse(JSON.stringify(defaultYamlObj)), hashParams) : defaultYamlObj;
+        const hasHashOverrides = Object.keys(rawHash).some(key => key !== 'gonext');
+        const mergedYamlObj = hasHashOverrides
+          ? deepMerge(JSON.parse(JSON.stringify(defaultYamlObj)), hashParams)
+          : defaultYamlObj;
 
-      // Convert YAML and prevent folded style (>-) using flowLevel: -1
-      const yamlString = jsyaml.dump(mergedYamlObj, { lineWidth: -1, flowLevel: -1 });
-      yamlInput.value = yamlString;
-      if (paramTextDiv) paramTextDiv.innerText = yamlString;
+        const yamlString = jsyaml.dump(mergedYamlObj, { lineWidth: -1, flowLevel: -1 });
+        yamlInput.value = yamlString;
+        if (paramTextDiv) paramTextDiv.innerText = yamlString;
+      });
+
 
       // Handle steps toggle
       stepsToggle.addEventListener('change', () => {

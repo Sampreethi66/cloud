@@ -72,8 +72,6 @@ echo "🔑 New UI_ACCESS_TOKEN: $UI_ACCESS_TOKEN"
 
 # --- Step 9: Post-Rotation Notification ---
 
-echo "🔑 New UI_ACCESS_TOKEN: $UI_ACCESS_TOKEN"
-
 # Copy to clipboard (macOS, Linux, Windows)
 if command -v pbcopy &> /dev/null; then
   echo "$UI_ACCESS_TOKEN" | pbcopy
