@@ -13,11 +13,12 @@ from utils.notebook_utils import (
     execute_notebook_simulation,
     NOTEBOOK_EXECUTION_AVAILABLE
 )
-
+from utils.auth_utils import require_token
 
 notebook_blueprint = Blueprint('notebook', __name__)
 
 @notebook_blueprint.route('/run-notebook', methods=['POST'])
+@require_token
 def run_notebook():
     try:
         print(f"[INFO] /run-notebook triggered", file=sys.stderr)
@@ -27,7 +28,7 @@ def run_notebook():
         parameters = payload.get("parameters", {})
         steps = payload.get("steps", [])  # Optional, empty by default
         if steps:
-            parameters['steps'] = steps  # Inject into notebook if provided
+            parameters['steps'] = steps
         print(f"[DEBUG] Received parameters: {json.dumps(parameters)}", file=sys.stderr)
         print(f"[DEBUG] Notebook path: {notebook_path}", file=sys.stderr)
 
@@ -35,7 +36,6 @@ def run_notebook():
             print("[WARN] Notebook execution dependencies missing", file=sys.stderr)
             return jsonify(execute_notebook_simulation())
 
-        # Create a temporary working directory
         with tempfile.TemporaryDirectory() as temp_dir:
             print(f"[DEBUG] Cloning {SOURCE_REPO_URL} into {temp_dir}", file=sys.stderr)
             git.Repo.clone_from(SOURCE_REPO_URL, temp_dir)
@@ -48,7 +48,6 @@ def run_notebook():
 
             print(f"[DEBUG] Executing notebook: {notebook_file}", file=sys.stderr)
 
-            # Inject parameters and execute notebook
             try:
                 pm.execute_notebook(
                     notebook_file,
@@ -60,15 +59,30 @@ def run_notebook():
                 print(f"[ERROR] Execution failed: {e}", file=sys.stderr)
                 return jsonify({'status': 'error', 'message': f"Execution failed: {str(e)}"}), 500
 
-            # Export notebook to HTML
+            # Read and print notebook cell outputs
             try:
                 with open(output_path, 'r') as f:
                     nb = nbformat.read(f, as_version=4)
+
+                for idx, cell in enumerate(nb.cells):
+                    if cell.cell_type != 'code':
+                        continue
+                    outputs = cell.get('outputs', [])
+                    for output in outputs:
+                        if output.output_type == 'stream':
+                            print(f"[NOTEBOOK CELL {idx}][{output.name}] {output.text}", file=sys.stderr)
+                        elif output.output_type == 'error':
+                            print(f"[NOTEBOOK CELL {idx}][ERROR] {output.ename}: {output.evalue}", file=sys.stderr)
+                        elif output.output_type == 'execute_result':
+                            text = output['data'].get('text/plain', '')
+                            print(f"[NOTEBOOK CELL {idx}][RESULT] {text}", file=sys.stderr)
+
                 html_exporter = HTMLExporter()
                 html_data, _ = html_exporter.from_notebook_node(nb)
                 print(f"[DEBUG] Notebook HTML size: {len(html_data)} bytes", file=sys.stderr)
+
             except Exception as e:
-                print(f"[WARN] HTML export failed: {e}", file=sys.stderr)
+                print(f"[WARN] Reading or logging notebook output failed: {e}", file=sys.stderr)
 
             return jsonify({
                 'status': 'success',
@@ -80,6 +94,7 @@ def run_notebook():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @notebook_blueprint.route('/list-notebook-steps', methods=['GET'])
+@require_token
 def list_notebook_steps():
     import traceback
     try:

@@ -68,7 +68,7 @@ Promoted with: Create commands for creating a Google Cloud Run containing Flask 
 
 The deployment script will:
 - Create Google Cloud project and enable APIs
-- Set up GitHub token in Secret Manager  
+- Set up GitHub token in Secret Manager
 - Build and deploy container to Cloud Run
 - Provide the service URL
 
@@ -187,9 +187,9 @@ Check if you already added the token in GCloud
 1. In your [GitHub account](https://github.com), navigate to Settings (upper right menu)
 2. Navigate to Developer settings (lower left) > Personal access tokens. Choose Fine-grained tokens.
 3. Create a new Fine-grained token so you can limit to one repo.
-4. Set the permissions to:  
-Contents: Read and write  
-Deployments: Read and write  
+4. Set the permissions to:
+Contents: Read and write
+Deployments: Read and write
 Metadata: Read-only (gets set automatically)
 
 
@@ -199,7 +199,7 @@ Commands for [Storing a GitHub Token in Secret Manager](../../localsite/start/st
 
 We named the token: github-token-run-models-1
 
-<!-- Since this is account-wide, let's call it github-token-modelearth-run-models 
+<!-- Since this is account-wide, let's call it github-token-modelearth-run-models
 TO DO: This will need to get sent into Run-Models-bkup.ipynb as a variable.
 -->
 
@@ -216,7 +216,7 @@ gcloud secrets add-iam-policy-binding github-token \
 
 ## Part 4: Create Flask Application
 
-[Review this flask info from Prem](https://github.com/ModelEarth/cloud/tree/main/cloud-main/flask), and anything useful as you 
+[Review this flask info from Prem](https://github.com/ModelEarth/cloud/tree/main/cloud-main/flask), and anything useful as you
 Create a directory for your project and set up the following files:
 
 ### `Dockerfile`
@@ -258,7 +258,7 @@ Page.html contains the button that will run our .ipynb file.
 
 [View page.html](page.html)
 
-## Part 5: Create Modified Notebook 
+## Part 5: Create Modified Notebook
 
 Create a modified version of your notebook that incorporates the upload function:
 
@@ -275,6 +275,9 @@ upload_reports_to_github(TARGET_REPO, GITHUB_TOKEN, branch='main', commit_messag
 
 ## Part 6: Deploy to Cloud Run
 
+Run rotate-token.sh to build and deploy securely. Use the UI_ACCESS_TOKEN printed in the terminal later for login access.
+
+The build and run commands included in the script are:
 ```bash
 # Build and deploy the application
 gcloud builds submit --tag gcr.io/your-project-id/notebook-executor

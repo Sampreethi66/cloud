@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from utils.auth_utils import require_token
 from utils.config_utils import load_config, save_config
 from utils.github_utils import get_github_token
 from utils.notebook_utils import SOURCE_REPO_URL, TARGET_REPO, NOTEBOOK_PATH, NOTEBOOK_EXECUTION_AVAILABLE
@@ -33,6 +34,7 @@ def config_page():
         return f.read()
 
 @core_blueprint.route('/get-config', methods=['GET'])
+@require_token
 def get_config_route():
     try:
         config = load_config()
@@ -47,6 +49,7 @@ def get_config_route():
         }), 500
 
 @core_blueprint.route('/save-config', methods=['POST'])
+@require_token
 def save_config_route():
     try:
         data = request.json
@@ -115,6 +118,7 @@ def status():
     })
 
 @core_blueprint.route('/webhook', methods=['POST'])
+@require_token
 def webhook():
     """Handle webhook from GitHub to update when the repo changes"""
     try:
@@ -129,5 +133,3 @@ def webhook():
     except Exception as e:
         print(f"[ERROR] Webhook handler failed: {e}", file=sys.stderr)
         return jsonify({'status': 'error', 'message': str(e)}), 500
-
-# Removed duplicate route - handled in notebook_runner.py
