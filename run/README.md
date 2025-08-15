@@ -2,7 +2,9 @@
 
 Our guide provides commands for Google Cloud Run service setup with Flask to execute a Jupyter notebook from a GitHub repository.
 
-**🚀 [View Resulting Site](https://notebook-executor-207223955365.us-central1.run.app)**
+**[Get Started](start)**
+**[View Files](https://github.com/ModelEarth/cloud/tree/main/run)**
+**[Resulting Site](https://notebook-executor-207223955365.us-central1.run.app)**
 
 ## Features
 
