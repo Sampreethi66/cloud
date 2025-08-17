@@ -38,26 +38,11 @@ Promoted with: Create commands for creating a Google Cloud Run containing Flask 
 
 ### Step 1: Setup Claude Code CLI
 
-1. **Install Node.js 18+** from [nodejs.org](https://nodejs.org/en/download)
-
-2. **Install Claude Code CLI:**
-   ```bash
-   npm install -g @anthropic-ai/claude-code
-   ```
-
-3. **Navigate to the project directory:**
-   ```bash
-   cd cloud/run
-   ```
-
-4. **Launch Claude Code CLI:**
-   ```bash
-   npx @anthropic-ai/claude-code
-   ```
+(Above)
 
 ### Step 2: Deploy to Google Cloud
 
-1. **Configure environment variables:**
+1. **Copy example.env to .env for your environment variables:**
    ```bash
    cp .env.example .env
    # Edit .env with your GitHub token and billing account

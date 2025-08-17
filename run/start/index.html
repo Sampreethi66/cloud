@@ -224,11 +224,41 @@
             })
             .then(response => response.json())
             .then(data => {
-                showStatus(data.message, data.status === 'success' ? 'success' : 'error');
+                if (data.status === 'success') {
+                    showFlaskStartupInstructions();
+                } else {
+                    showStatus(data.message, 'error');
+                }
             })
             .catch(error => {
-                showStatus('Error saving configuration: ' + error.message, 'error');
+                showFlaskStartupInstructions();
             });
+        }
+
+        function showFlaskStartupInstructions() {
+            const message = `
+                <div style="margin-bottom: 16px;">
+                    <strong>✅ Configuration saved successfully!</strong>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <strong>Next Steps - Start Flask Server with Claude Code CLI:</strong>
+                </div>
+                <div style="background: #f6f8fa; padding: 12px; border-radius: 6px; margin-bottom: 12px; font-family: monospace; font-size: 14px;">
+                    cd cloud/run/site<br>
+                    python3 -m venv env<br>
+                    source env/bin/activate<br>
+                    pip install -r requirements.txt<br>
+                    npx @anthropic-ai/claude-code
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <strong>In Claude Code CLI, ask:</strong>
+                </div>
+                <div style="background: #e8f4f8; padding: 12px; border-radius: 6px; border-left: 4px solid #4285f4; font-style: italic;">
+                    "Start the Flask server using the configuration in the .env file"
+                </div>
+            `;
+            
+            showStatus(message, 'success', true); // true = keep visible
         }
 
         function runNotebook() {
@@ -246,15 +276,17 @@
             });
         }
 
-        function showStatus(message, type) {
+        function showStatus(message, type, keepVisible = false) {
             const statusDiv = document.getElementById('status');
-            statusDiv.textContent = message;
+            statusDiv.innerHTML = message; // Use innerHTML to support HTML content
             statusDiv.className = 'status ' + type;
             statusDiv.style.display = 'block';
             
-            setTimeout(() => {
-                statusDiv.style.display = 'none';
-            }, 5000);
+            if (!keepVisible) {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
         }
 
         // Load current configuration on page load
