@@ -152,7 +152,7 @@ gcloud alpha billing accounts describe 000000-000000-000000
 The above will fail initially, so
 associate a billing account to your new "modelearth-run-models" project
 
-    gcloud billing projects link modelearth-run-models --billing-account=BILLING_ACCOUNT_ID
+    gcloud billing projects link modelearth-run-models --billing-account=GOOGLE_BILLING_ID
 
  TODO: If you don't have a billing account yet, fork this repo and document commands to add it here. Send a PR.
 
