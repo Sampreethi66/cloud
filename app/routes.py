@@ -1,38 +1,55 @@
-from flask import Blueprint, render_template, request, jsonify
-import pandas as pd
 from pathlib import Path
+from flask import Blueprint, jsonify, render_template, send_from_directory, request
+import pandas as pd
 
 bp = Blueprint("main", __name__)
-DATA = Path(__file__).resolve().parent / "data" / "county_density.csv"
 
-# Load once at startup (simple v0 approach)
-DF = pd.read_csv(DATA, dtype={"county_fips": str})
-if "state_fips" not in DF.columns:
-    DF["state_fips"] = DF["county_fips"].str[:2]
+ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = ROOT / "app" / "data"
+CSV_FILE = DATA_DIR / "county_density.csv"
 
-@bp.route("/")
-def index():
-    # simple preview table on the homepage
-    table = DF.head(100).to_html(classes="table table-striped table-sm", index=False)
-    states = sorted(DF["state_fips"].dropna().unique())
-    return render_template("index.html", table=table, states=states)
+def load_df():
+    if not CSV_FILE.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(CSV_FILE, dtype={"county_fips": str})
+    if "state_fips" not in df.columns and "county_fips" in df.columns:
+        df["state_fips"] = df["county_fips"].str[:2]
+    return df
 
-@bp.route("/api/density")
-def api_density():
-    q = DF.copy()
-    state = request.args.get("state_fips")
-    county = request.args.get("county_fips")
-    top = int(request.args.get("top", 100))
+@bp.get("/health")
+def health():
+    return {"ok": True}
+
+@bp.get("/")
+def home():
+    df = load_df()
+    states = sorted(df["state_fips"].dropna().unique().tolist()) if not df.empty else []
+    return render_template("index.html", states=states)
+
+@bp.get("/api/county_density")
+def api_county_density():
+    df = load_df()
+    if df.empty:
+        return jsonify([])
+
+    state = request.args.get("state_fips") or request.args.get("state")
+    county_fips = request.args.get("county_fips")
+    county = request.args.get("county")
+    limit = int(request.args.get("limit", "100"))
 
     if state:
-        q = q[q["state_fips"] == state]
+        df = df[df["state_fips"] == state]
+    if county_fips:
+        df = df[df["county_fips"] == county_fips]
     if county:
-        q = q[q["county_fips"] == county]
+        df = df[df["county_name"].str.contains(county, case=False, na=False)]
 
-    sort_col = "density_per_1k" if "density_per_1k" in q.columns else (
-        "employment_5415" if "employment_5415" in q.columns else "population"
-    )
-    q = q.sort_values(sort_col, ascending=False).head(top)
+    cols = [c for c in ["state_fips","county_fips","county_name","population","employment_5415","density_per_1k"] if c in df.columns]
+    out = df[cols] if cols else df
+    return out.head(limit).to_json(orient="records")
 
-    cols = [c for c in ["state_fips","county_fips","county_name","population","employment_5415","density_per_1k"] if c in q.columns]
-    return jsonify(q[cols].to_dict(orient="records"))
+@bp.get("/download/county_density.csv")
+def download_csv():
+    if not CSV_FILE.exists():
+        return jsonify({"error": "CSV not found"}), 404
+    return send_from_directory(directory=DATA_DIR, path="county_density.csv", as_attachment=True)
