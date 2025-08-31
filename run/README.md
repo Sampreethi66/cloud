@@ -37,9 +37,7 @@ Promoted with: Create commands for creating a Google Cloud Run containing Flask 
 
 ## Quick Deployment with Claude Code CLI (Recommended)
 
-### Step 1: Setup Claude Code CLI
-
-(Above)
+### Step 1: [Setup via Claude Code CLI in webroot](https://model.earth/webroot/)
 
 ### Step 2: Deploy to Google Cloud
 
