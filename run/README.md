@@ -1,7 +1,6 @@
 # Google Cloud Run with CoLab+GitHub
 
-Our guide provides commands for Google Cloud Run service setup with Flask to execute a Jupyter notebook from a GitHub repository.
-**[Python Files on Github](https://github.com/ModelEarth/cloud/tree/main/run)**
+Setup Google Cloud Run service with Flask for a Jupyter notebook and GitHub. [View Python](https://github.com/ModelEarth/cloud/tree/main/run)
 
 ## Setup Weebroot
 **[Setup Webroot](https://model.earth/webroot/)**
@@ -249,8 +248,6 @@ CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app
 ### `page.html`
 
 [Page.html](page.html) contains the button that will run our .ipynb file.
-
-[View page.html](page.html)
 
 ## Part 5: Create Modified Notebook
 
