@@ -317,3 +317,5 @@ gcloud scheduler jobs create http notebook-executor-scheduler \
 - Ensure all API permissions are correctly set
 - Verify that the GitHub token has the necessary permissions
 - Check the notebook execution logs in Cloud Run
+
+Should we move anything from [cloud-main](../cloud-main) into the cloud/run folder?
