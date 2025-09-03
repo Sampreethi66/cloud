@@ -18,7 +18,40 @@
 }
 </style>
 <script>
-loadMarkdown("README.md", "readmeDiv", "_parent");
+loadMarkdown("README.md", "readmeDiv", "_parent", 1, function() {
+    // Initialize radio button functionality after markdown loads
+    const localRadio = document.getElementById('localdev');
+    const cloudRadio = document.getElementById('clouddev');
+    const localSpans = document.querySelectorAll('.localdev');
+    const cloudSpans = document.querySelectorAll('.clouddev');
+    
+    // Restore saved choice or default to local
+    const savedChoice = localStorage.getItem('deploymentChoice') || 'local';
+    if (savedChoice === 'cloud') {
+        cloudRadio.checked = true;
+        localRadio.checked = false;
+    } else {
+        localRadio.checked = true;
+        cloudRadio.checked = false;
+    }
+    
+    // Show/hide content based on selection
+    function toggleContent() {
+        const isLocal = localRadio.checked;
+        localSpans.forEach(span => span.style.display = isLocal ? 'block' : 'none');
+        cloudSpans.forEach(span => span.style.display = isLocal ? 'none' : 'block');
+        
+        // Save choice
+        localStorage.setItem('deploymentChoice', isLocal ? 'local' : 'cloud');
+    }
+    
+    // Initial toggle
+    toggleContent();
+    
+    // Add event listeners
+    localRadio.addEventListener('change', toggleContent);
+    cloudRadio.addEventListener('change', toggleContent);
+});
 </script>
 
 </head>
@@ -28,5 +61,7 @@ loadMarkdown("README.md", "readmeDiv", "_parent");
   <div id="commonSetupDiv"></div>
   <div id="readmeDiv"></div>
 </div>
+
+
 </body>
 </html>
