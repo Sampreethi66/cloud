@@ -15,6 +15,7 @@
     #issuesWidget {
         display: none;
     }
+
 }
 </style>
 <script>
@@ -60,7 +61,35 @@ loadMarkdown("README.md", "readmeDiv", "_parent", 1, function() {
 <div class="content contentpadding large-list" style="max-width: 1800px;">
   <div id="commonSetupDiv"></div>
   <div id="readmeDiv"></div>
+  <h3>Python Execution Options</h3>
+
+<label>
+  <input type="radio" name="execution" id="simplePython" value="simple"> Simple python
+</label><br>
+<label>
+  <input type="radio" name="execution" id="notebookPython" value="notebook"> Run-Models-bkup.ipynb python
+</label>
+
+<div id="executionInstructions" style="margin-top:10px; font-style:italic;">
+  Please select an option above.
 </div>
+</div>
+<script>
+  const simplePython = document.getElementById('simplePython');
+  const notebookPython = document.getElementById('notebookPython');
+  const execInstructions = document.getElementById('executionInstructions');
+
+  function updateInstructions() {
+    if (simplePython.checked) {
+      execInstructions.innerHTML = "Instructions for running Simple python.";
+    } else if (notebookPython.checked) {
+      execInstructions.innerHTML = "Instructions for running Run-Models-bkup.ipynb python.";
+    }
+  }
+
+  simplePython.addEventListener('change', updateInstructions);
+  notebookPython.addEventListener('change', updateInstructions);
+</script>
 
 
 </body>
