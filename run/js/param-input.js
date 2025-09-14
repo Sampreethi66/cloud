@@ -251,7 +251,7 @@ function yamlToUrlParams(yamlStr) {
             // Handle array items
             const value = line.trim().substring(1).trim();
 
-            if (!Array.isArray(pageparams[currentKey])) {
+            if (!Array.isArray(paramsYaml[currentKey])) {
                 paramsYaml[currentKey] = [];
             }
             paramsYaml[currentKey].push(value);
