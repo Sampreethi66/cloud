@@ -3,7 +3,7 @@
 
 ## Our Google Cloud Run
 
-[Our Cloud Run](run) - is being setup to run our [RealityStream Colab](/realitystream)
+[Our Cloud Run](run) - is being setup to run our [RealityStream Colab](https://model.earth/realitystream)
 
 ## Dev Folders
 
@@ -37,9 +37,9 @@ To try: [Cloudflare Workers](https://developers.cloudflare.com/workers/) app.
 
 ## RealityStream Project
 
-[RealityStream](/realitystream) is our main ML python project, in addition we have:
+[RealityStream](https://model.earth/realitystream) is our main ML python project, in addition we have:
 
+[Industry Imputation](https://model.earth/machine-learning) - Estimating business patterns
 <!--
 [Financial](/finance) - Credit market probability analysis  
-[Industry Imputation](/machine-learning) - Estimating business patterns
 -->
