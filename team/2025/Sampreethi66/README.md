@@ -1,25 +1,19 @@
-# Cloud – Flask UI for CS Job Density - Sampreethi66
+# Flask UX - ACS + BLS Filters
 
-Local run:
+## What it does
+- Simple Flask interface for filtering ACS + BLS data.
+- Endpoints:
+  /api/states
+  /api/counties
+  /api/zips
+  /api/filter
+  /api/debug/info
 
-	  python -m venv env
-
-	  env\Scripts\activate
-
-	  pip install -r requirements.txt
-
-	  python wsgi.py
-
-Endpoints:
-
-	  / -> simple table + filters UI
-
-	  /api/density -> JSON (supports ?state_fips= & ?county_fips= & ?top=)
-
-
-
-Flask UI for CS job density
-
-	Endpoints: /, /health, /api/county_density, /download/county_density.csv
-
-	Filters: state_fips, county_fips, county, limit
+## How to run (Windows)
+1) Open Command Prompt
+2) cd team\2025\Sampreethi66
+3) python -m venv .venv
+4) .venv\Scripts\activate
+5) pip install -r requirements.txt
+6) python app.py
+7) Open http://127.0.0.1:5000 in your browser
